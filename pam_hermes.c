@@ -12,6 +12,13 @@
 
 #define FINGERPRINT_LENGTH 5
 
+static int globerr(const char*, int);
+static bool is_block_device(const char*);
+static bool has_hermes_fingerprint(const char*);
+static bool is_hermes_device(const char*);
+static bool can_login(const char*);
+static bool is_authenticated();
+
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
 	return PAM_SUCCESS;
@@ -20,6 +27,11 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
 	return PAM_SUCCESS;
+}
+
+PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,int argc, const char **argv)
+{
+	return is_authenticated() ? PAM_SUCCESS : PAM_AUTH_ERR;
 }
 
 static int globerr(const char *path, int eerrno)
@@ -124,9 +136,4 @@ static bool is_authenticated()
  safe_exit:
 	globfree(&files);
 	return ret;
-}
-
-PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,int argc, const char **argv)
-{
-	return is_authenticated() ? PAM_SUCCESS : PAM_AUTH_ERR;
 }
