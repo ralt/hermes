@@ -1,0 +1,11 @@
+Source: hermes
+Section: unknown
+Priority: optional
+Maintainer: Florian Margaine <florian@margaine.com>
+Build-Depends: debhelper (>= 9), autotools-dev
+Standards-Version: 3.9.6
+
+Package: hermes
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 1.0.1-6)
+Description: authenticate on linux by plugging your USB stick

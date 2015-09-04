@@ -1,0 +1,2 @@
+.libs/*.so /lib/security/
+debian/pam-configs/nopass /usr/share/pam-configs/
