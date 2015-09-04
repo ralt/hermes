@@ -16,8 +16,8 @@ static int globerr(const char*, int);
 static bool is_block_device(const char*);
 static bool has_hermes_fingerprint(const char*);
 static bool is_hermes_device(const char*);
-static bool can_login(const char*);
-static bool is_authenticated();
+static bool can_login(const char*, const char*);
+static bool is_authenticated(const char*);
 
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
@@ -31,7 +31,13 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,int argc, const char **argv)
 {
-	return is_authenticated() ? PAM_SUCCESS : PAM_AUTH_ERR;
+	char *user;
+	int retval;
+	retval = pam_get_user(pamh, &user, "Username: ");
+	if (retval != PAM_SUCCESS) {
+		return retval;
+	}
+	return is_authenticated(user) ? PAM_SUCCESS : PAM_AUTH_ERR;
 }
 
 static int globerr(const char *path, int eerrno)
@@ -107,25 +113,25 @@ static bool is_hermes_device(const char *path)
 	return true;
 }
 
-static bool can_login(const char *path)
+static bool can_login(const char *path, const char *user)
 {
 	return true;
 }
 
-static bool is_authenticated()
+static bool is_authenticated(const char *user)
 {
 	int retval;
 	bool ret;
 	glob_t files;
 
-	retval = glob("/dev/loop1", GLOB_ERR | GLOB_NOSORT, globerr, &files);
+	retval = glob("/dev/loop3", GLOB_ERR | GLOB_NOSORT, globerr, &files);
 	if (retval != 0) {
 		return false;
 	}
 
 	for (size_t i = 0; i < files.gl_pathc; i++) {
 		if (is_hermes_device(files.gl_pathv[i])) {
-			ret = can_login(files.gl_pathv[i]);
+			ret = can_login(files.gl_pathv[i], user);
 			goto safe_exit;
 		}
 	}

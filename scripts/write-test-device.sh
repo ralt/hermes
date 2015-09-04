@@ -1,16 +1,25 @@
 #!/usr/bin/sbcl --script
 
-(load "~/.sbclrc")
+(load "/home/florian/.sbclrc")
 
-(defun write-bytes (stream bytes)
+(ql:quickload :alexandria)
+
+(defun write-bytes (bytes stream)
   (dolist (byte bytes)
     (write-byte byte stream)))
 
 (defun string-to-bytes (string)
   (loop for char across string collect (char-code char)))
 
-(with-open-file (f #p"test.bin"
-                   :direction :output
-                   :element-type '(unsigned-byte 8)
-                   :if-exists :overwrite)
-  (write-bytes f (string-to-bytes "Robin")))
+(defun vector-to-list (vec)
+  (loop for el across vec collect el))
+
+(let ((key (alexandria:read-file-into-byte-vector "hermes-secret-key.gpg")))
+ (with-open-file (f #p"test.bin"
+                    :direction :output
+                    :element-type '(unsigned-byte 8)
+                    :if-exists :overwrite
+                    :if-does-not-exist :create)
+                 (write-bytes (string-to-bytes "Robin") f)
+                 (write-byte 1 f) ;; 1 = 2489 bytes key
+                 (write-bytes (vector-to-list key) f)))
