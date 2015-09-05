@@ -3,6 +3,7 @@
 (load "/home/florian/.sbclrc")
 
 (ql:quickload :alexandria)
+(ql:quickload :cl-ppcre)
 
 (defun write-bytes (bytes stream)
   (dolist (byte bytes)
@@ -14,7 +15,10 @@
 (defun vector-to-list (vec)
   (loop for el across vec collect el))
 
-(let ((public-key (vector-to-list (alexandria:read-file-into-byte-vector "vagrant.pub")))
+(defun get-key (string)
+  (mapcar #'char-code (vector-to-list (second (cl-ppcre:split " " string)))))
+
+(let ((public-key (get-key (alexandria:read-file-into-string "vagrant.pub")))
       (private-key (vector-to-list (alexandria:read-file-into-byte-vector "vagrant"))))
  (with-open-file (f #p"test.bin"
                     :direction :output

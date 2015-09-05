@@ -3,7 +3,7 @@ pam_hermes_la_LDFLAGS = -avoid-version -module -Wl
 pam_hermes_la_LIBADD = @LTLIBOBJS@
 pam_hermes_la_SOURCES = pam_hermes.c
 
-AM_CFLAGS			= -Wall
+AM_CFLAGS			= -Wall -Werror -lpam -lssh
 AUTOMAKE_OPTIONS		= dist-bzip2 dist-xz
 
 LIBTOOL_DEPS			= @LIBTOOL_DEPS@
