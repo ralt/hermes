@@ -18,8 +18,8 @@
 (defun get-key (string)
   (mapcar #'char-code (vector-to-list (second (cl-ppcre:split " " string)))))
 
-(let ((public-key (get-key (alexandria:read-file-into-string "vagrant.pub")))
-      (private-key (vector-to-list (alexandria:read-file-into-byte-vector "vagrant"))))
+(let ((public-key (get-key (alexandria:read-file-into-string "id_rsa.pub")))
+      (private-key (vector-to-list (alexandria:read-file-into-byte-vector "id_rsa"))))
  (with-open-file (f #p"test.bin"
                     :direction :output
                     :element-type '(unsigned-byte 8)
