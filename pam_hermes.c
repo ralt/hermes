@@ -124,7 +124,7 @@ static bool is_authenticated(const char *user)
 	bool ret;
 	glob_t files;
 
-	retval = glob("/dev/loop3", GLOB_ERR | GLOB_NOSORT, globerr, &files);
+	retval = glob("/dev/loop6", GLOB_ERR | GLOB_NOSORT, globerr, &files);
 	if (retval != 0) {
 		return false;
 	}

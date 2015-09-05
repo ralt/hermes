@@ -14,12 +14,14 @@
 (defun vector-to-list (vec)
   (loop for el across vec collect el))
 
-(let ((key (alexandria:read-file-into-byte-vector "hermes-secret-key.gpg")))
+(let ((public-key (vector-to-list (alexandria:read-file-into-byte-vector "vagrant.pub")))
+      (private-key (vector-to-list (alexandria:read-file-into-byte-vector "vagrant"))))
  (with-open-file (f #p"test.bin"
                     :direction :output
                     :element-type '(unsigned-byte 8)
                     :if-exists :overwrite
                     :if-does-not-exist :create)
                  (write-bytes (string-to-bytes "Robin") f)
-                 (write-byte 1 f) ;; 1 = 2489 bytes key
-                 (write-bytes (vector-to-list key) f)))
+                 (write-byte 1 f) ;; 1 = rsa pair
+                 (write-bytes public-key f)
+                 (write-bytes private-key f)))
