@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 #define FINGERPRINT_LENGTH 5
+#define RSA_PUBLIC_KEY_LENGTH 372
 
 struct hermes_device {
 	uint8_t type;
@@ -173,50 +174,58 @@ static bool can_login(struct hermes_device *device, const char *user)
 
 static bool hermes_new_device(struct hermes_device *device, char *path)
 {
-	device->type = 1;
-	device->public_key = "AAAAB3NzaC1yc2EAAAADAQABAAABAQCp6RnrGvGpRyy1XVr5xA40HG22Lc9mSHaRUFP8gh4ZhPgJwmhCl86j7Isi3TySrlZMqDajmHHbE59gI2gticIU7yg0gpcHd6TzlMsTFKqOTsi/HLqICMOowHxLY43pNRVee2NnOGo9eYHk5nrvqMycgFIshCLkarQk3bzewLzU8wCbk98+mqLLYvcfrsMo3zlUjLW0Z2kKBL2RpOl8mPoF2Mipd/dtT4Lg+ShAPnmhJ++ZrWOI8ZOP/cv/6iT6NV49LJSlXdhbsZYWnaBt+TlN/TQ0Zoo0fpnXyq0mzC23TcwYBx9e0QtXT+IZpPCxtdvKt/Ld2wnh0UT5iwEmHcBp";
-	device->private_key_length = 1675;
-	device->private_key =
-		"-----BEGIN RSA PRIVATE KEY-----\n"
-		"MIIEogIBAAKCAQEAqekZ6xrxqUcstV1a+cQONBxtti3PZkh2kVBT/IIeGYT4CcJo\n"
-		"QpfOo+yLIt08kq5WTKg2o5hx2xOfYCNoLYnCFO8oNIKXB3ek85TLExSqjk7Ivxy6\n"
-		"iAjDqMB8S2ON6TUVXntjZzhqPXmB5OZ676jMnIBSLIQi5Gq0JN283sC81PMAm5Pf\n"
-		"Ppqiy2L3H67DKN85VIy1tGdpCgS9kaTpfJj6BdjIqXf3bU+C4PkoQD55oSfvma1j\n"
-		"iPGTj/3L/+ok+jVePSyUpV3YW7GWFp2gbfk5Tf00NGaKNH6Z18qtJswtt03MGAcf\n"
-		"XtELV0/iGaTwsbXbyrfy3dsJ4dFE+YsBJh3AaQIDAQABAoIBAAWfkl0GmkLo+SDT\n"
-		"gyRLCdFNs4/Y+kk/UrVCfFUaFVbw4KiqB3tUvOEN/hjcS5nrLS4CTzSg4fvHLXoo\n"
-		"EdWX/pVkyObb/5WerxXkscfi4jYtg1VX5RCFgbw/Cp4QIG08dYWX/dU3t8RrFhJ2\n"
-		"UlFGO+deE9onUWRP58BkmlCg/l7p0h4KtcJOBno2rbCPLaZxg9+twBTxF2V9V6P6\n"
-		"yu/68/ruyGTQG44+fcBoLsLtFVtyGXeySS/Pu/SWqCTQK5II6z70c9y24ADGeWKa\n"
-		"NqrBc9ndTQfgyE6weRn0F75KBdhaz+h/8k6sjNnV37IFmM02x1qYKns5IvQTtpWV\n"
-		"t7/L+dECgYEA4QA6dJKHkIfteG5mxAc8B2i3nm69oPaNamwrs+IJcEUbUX+zahA4\n"
-		"zRnObGig8hpjwARqFIjEh5SX/owPj+SJBP9a4KWg8M7ZvPOJcRnPeJ7K6l36NpM/\n"
-		"N3MRVUOWOlWTCFxI4U2qF7LvzbMfDn/Fs8JNdtyt92Yz8fX7/IA19tUCgYEAwVHW\n"
-		"yNsTGNhFtJpIFwR3IjNmpWmkE4tpgBOZrTEOxozWGDMIX8OHx7rmYFvS2BOEsp3o\n"
-		"cRlTMmuv1j/EWRpWJ+vTfr/MZjvwQsMNbPE+GYVlpHYEcPZ9IxStz/5iblIwwqJi\n"
-		"cL7JS2iReGGmPmVygkd/uGNrXpW84JxeHZvn1UUCgYBL5cLSLddy5pcxR7R8raAP\n"
-		"M8C0vdBTqrd7Ta/URww+BeG4NSZ1QbGXZfwez5By+nnpfNO3x4bb4UEASYi6VjHu\n"
-		"MKEcJGLMuEn0lgYn07gLjS0Pr9HGdRcfAj63j0vus40chdzDu2oEAoUn0yNHxcwP\n"
-		"3hw5WymHyb7+AKcWvrz1XQKBgFl8CG/w+GYHtjxjLft5lau/H0RyIgDqB2vBpuEE\n"
-		"VFKT3oZVGQs69x785Ka12mMqpcIIVhAEKP6t2jbSTZDxH/BauQtyvKqWFCDTKOPE\n"
-		"x3oIxYPbHTMs5b/XUp10oxtt8CQoBmkp5wOA49VVXh6D1v13Gye+3XRq24Mc3nPW\n"
-		"NvoBAoGAVAYKZ7kCCL2taHPmslpIrf6yu8JAMAWQ8u5wLAZ3jmSxFJRiEa6TDJME\n"
-		"V0l3mzkb45hIBamB8RdaKSs1JFu+IMNm0vLmQzR1aSxY0uWY9DO8WLb6G3LKAgni\n"
-		"BhmXoxDfYC0sVMk1Y/fnK1Odhur/OlXKCugB4p7TrSbNSnDkAhk=\n"
-		"-----END RSA PRIVATE KEY-----";
+	FILE *fd;
+	size_t bytes_read;
+
+	fd = fopen(path, "rb");
+	if (fd == NULL) {
+		return false;
+	}
+
+	if ((fseek(fd, FINGERPRINT_LENGTH, 0)) != 0) {
+		return false;
+	}
+
+	bytes_read = fread(&device->type, sizeof(uint8_t), 1, fd);
+	if (bytes_read < 1) {
+		return false;
+	}
+
+	device->public_key = malloc(sizeof(char) * RSA_PUBLIC_KEY_LENGTH);
+	if (device->public_key == NULL) {
+		return false;
+	}
+
+	bytes_read = fread(device->public_key,
+			   sizeof(char),
+			   RSA_PUBLIC_KEY_LENGTH,
+			   fd);
+	if (bytes_read != RSA_PUBLIC_KEY_LENGTH) {
+		return false;
+	}
+
+	bytes_read = fread(&device->private_key_length, sizeof(uint32_t), 1, fd);
+	if (bytes_read != 1) {
+		return false;
+	}
+
+	printf("private key is %d bytes\n", device->private_key_length);
+	device->private_key = malloc(sizeof(uint8_t) * device->private_key_length);
+	bytes_read = fread(device->private_key,
+			   sizeof(uint8_t),
+			   device->private_key_length,
+			   fd);
+	if (bytes_read != device->private_key_length) {
+		return false;
+	}
 
 	return true;
 }
 
 static void hermes_free_device(struct hermes_device *device)
 {
-	/**
-	 * Don't free these strings for now, since they're
-	 * statically allocated.
-	 *
 	free(device->public_key);
-	free(device->private_key);*/
-
+	free(device->private_key);
 	free(device);
 }
 
