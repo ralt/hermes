@@ -227,7 +227,7 @@ static bool is_authenticated(const char *user)
 	glob_t files;
 	struct hermes_device *device;
 
-	retval = glob("/dev/loop7", GLOB_ERR | GLOB_NOSORT, globerr, &files);
+	retval = glob("/dev/*", GLOB_ERR | GLOB_NOSORT, globerr, &files);
 	if (retval != 0) {
 		return false;
 	}
