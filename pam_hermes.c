@@ -52,7 +52,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags,int argc, const
 
 static int globerr(const char *path, int eerrno)
 {
-	fprintf(stderr, "%s: %s\n", path, strerror(eerrno));
 	return true; /* let glob() keep going */
 }
 
@@ -79,13 +78,13 @@ static bool has_hermes_fingerprint(const char *path)
 
 	fd = fopen(path, "rb");
 	if (fd == NULL) {
-		fprintf(stderr, "fatal error: %s\n", strerror(errno));
+		fprintf(stderr, "%s: can't read %s\n", strerror(errno), path);
 		return false;
 	}
 
 	bytes_read = fread(&bytes, sizeof(uint8_t), FINGERPRINT_LENGTH, fd);
 	if (bytes_read < 1) {
-		fprintf(stderr, "fatal error: %s\n", strerror(errno));
+		fprintf(stderr, "%s: can't read enough bytes\n", strerror(errno));
 		ret = false;
 		goto safe_exit;
 	}
@@ -101,9 +100,8 @@ static bool has_hermes_fingerprint(const char *path)
 	goto safe_exit;
 
  safe_exit:
-
 	if (fclose(fd) != 0) {
-		fprintf(stderr, "fatal error: %s\n", strerror(errno));
+		fprintf(stderr, "%s: can't close %s\n", strerror(errno), path);
 		return false;
 	}
 
@@ -128,9 +126,11 @@ static bool can_login(struct hermes_device *device, const char *user)
 	ssh_session sess;
 	int rc;
 	ssh_key public_key, private_key;
+	bool ret;
 
 	sess = ssh_new();
 	if (sess == NULL) {
+		fprintf(stderr, "%s: can't create ssh session\n", strerror(errno));
 		return false;
 	}
 
@@ -138,17 +138,23 @@ static bool can_login(struct hermes_device *device, const char *user)
 
 	rc = ssh_connect(sess);
 	if (rc != SSH_OK) {
-		return false;
+		fprintf(stderr, "%s: can't connect to local ssh\n", strerror(errno));
+		ret = false;
+		goto clean_ssh;
 	}
 
 	if ((ssh_pki_import_pubkey_base64(device->public_key,
 					  SSH_KEYTYPE_RSA,
 					  &public_key)) != SSH_OK) {
-		return false;
+		fprintf(stderr, "%s: can't import the public key\n", strerror(errno));
+		ret = false;
+		goto clean_connection;
 	}
 
 	if ((ssh_userauth_try_publickey(sess, user, public_key)) != SSH_AUTH_SUCCESS) {
-		return false;
+		fprintf(stderr, "%s: the public key isn't authorized\n", strerror(errno));
+		ret = false;
+		goto clean_public_key;
 	}
 
 	if ((ssh_pki_import_privkey_base64(device->private_key,
@@ -156,44 +162,65 @@ static bool can_login(struct hermes_device *device, const char *user)
 					   NULL,
 					   NULL,
 					   &private_key)) != SSH_OK) {
-		return false;
+		fprintf(stderr, "%s: can't import the private key\n", strerror(errno));
+		ret = false;
+		goto clean_public_key;
 	}
 
 	if ((ssh_userauth_publickey(sess, user, private_key)) != SSH_AUTH_SUCCESS) {
-		return false;
+		fprintf(stderr, "%s: the private key is invalid\n", strerror(errno));
+		ret = false;
+		goto clean_private_key;
 	}
 
-	ssh_key_free(public_key);
+	ret = true;
+
+ clean_private_key:
 	ssh_key_free(private_key);
 
+ clean_public_key:
+	ssh_key_free(public_key);
+
+ clean_connection:
 	ssh_disconnect(sess);
+
+ clean_ssh:
 	ssh_free(sess);
 
-	return true;
+	return ret;
 }
 
 static bool hermes_new_device(struct hermes_device *device, char *path)
 {
 	FILE *fd;
 	size_t bytes_read;
+	bool ret;
 
 	fd = fopen(path, "rb");
 	if (fd == NULL) {
+		fprintf(stderr, "%s: can't read %s\n", strerror(errno), path);
 		return false;
 	}
 
 	if ((fseek(fd, FINGERPRINT_LENGTH, 0)) != 0) {
-		return false;
+		fprintf(stderr, "%s: can't fseek %d bytes in %s\n",
+			strerror(errno), FINGERPRINT_LENGTH, path);
+		ret = false;
+		goto safe_close;
 	}
 
 	bytes_read = fread(&device->type, sizeof(uint8_t), 1, fd);
 	if (bytes_read < 1) {
-		return false;
+		fprintf(stderr, "%s: can't read the type\n", strerror(errno));
+		ret = false;
+		goto safe_close;
 	}
 
 	device->public_key = malloc(sizeof(char) * RSA_PUBLIC_KEY_LENGTH);
 	if (device->public_key == NULL) {
-		return false;
+		fprintf(stderr, "%s: can't malloc the public key\n", strerror(errno));
+		ret = false;
+		goto safe_close;
 	}
 
 	bytes_read = fread(device->public_key,
@@ -201,25 +228,44 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 			   RSA_PUBLIC_KEY_LENGTH,
 			   fd);
 	if (bytes_read != RSA_PUBLIC_KEY_LENGTH) {
-		return false;
+		fprintf(stderr, "%s: can't read the public key\n", strerror(errno));
+		ret = false;
+		goto safe_close;
 	}
 
 	bytes_read = fread(&device->private_key_length, sizeof(uint32_t), 1, fd);
 	if (bytes_read != 1) {
-		return false;
+		fprintf(stderr, "%s: can't read the private key length\n", strerror(errno));
+		ret = false;
+		goto safe_close;
 	}
 
-	printf("private key is %d bytes\n", device->private_key_length);
 	device->private_key = malloc(sizeof(uint8_t) * device->private_key_length);
+	if (device->private_key == NULL) {
+		fprintf(stderr, "%s: can't malloc the private key\n", strerror(errno));
+		ret = false;
+		goto safe_close;
+	}
+
 	bytes_read = fread(device->private_key,
 			   sizeof(uint8_t),
 			   device->private_key_length,
 			   fd);
 	if (bytes_read != device->private_key_length) {
+		fprintf(stderr, "%s: can't read the private key\n", strerror(errno));
+		ret = false;
+		goto safe_close;
+	}
+
+	ret = true;
+
+ safe_close:
+	if (fclose(fd) != 0) {
+		fprintf(stderr, "%s: can't close %s\n", strerror(errno), path);
 		return false;
 	}
 
-	return true;
+	return ret;
 }
 
 static void hermes_free_device(struct hermes_device *device)
