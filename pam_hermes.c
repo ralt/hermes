@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 #define FINGERPRINT_LENGTH 5
+#define RSA_TYPE 1
 #define RSA_PUBLIC_KEY_LENGTH 372
 
 struct hermes_device {
