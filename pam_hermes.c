@@ -14,10 +14,10 @@
 
 #define FINGERPRINT_LENGTH 5
 #define RSA_TYPE 1
-#define RSA_PUBLIC_KEY_LENGTH 372
 
 struct hermes_device {
 	uint8_t type;
+	uint32_t public_key_length;
 	char *public_key;
 	uint32_t private_key_length;
 	char *private_key;
@@ -217,7 +217,14 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 		goto safe_close;
 	}
 
-	device->public_key = malloc(sizeof(char) * RSA_PUBLIC_KEY_LENGTH);
+	bytes_read = fread(&device->public_key_length, sizeof(uint32_t), 1, fd);
+	if (bytes_read != 1) {
+		fprintf(stderr, "%s: can't read the public key length\n", strerror(errno));
+		ret = false;
+		goto safe_close;
+	}
+
+	device->public_key = malloc(sizeof(char) * device->public_key_length);
 	if (device->public_key == NULL) {
 		fprintf(stderr, "%s: can't malloc the public key\n", strerror(errno));
 		ret = false;
