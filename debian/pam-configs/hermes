@@ -4,12 +4,3 @@ Priority: 256
 Auth-Type: Primary
 Auth-Final:
         sufficient      pam_hermes.so
-Account-Type: Primary
-Account-Final:
-        sufficient      pam_hermes.so
-Password-Type: Primary
-Password-Final:
-        sufficient      pam_hermes.so
-Session-Type: Primary
-Session-Final:
-        sufficient      pam_hermes.so
