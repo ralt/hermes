@@ -30,14 +30,27 @@ static bool is_hermes_device(const char*);
 static bool can_login(struct hermes_device*, const char*);
 static bool is_authenticated(const char*);
 
+PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+	char *user;
+	int retval;
+	retval = pam_get_user(pamh, (const char**) &user, NULL);
+	if (retval != PAM_SUCCESS) {
+		return retval;
+	}
+
+	return is_authenticated(user) ? PAM_SUCCESS : PAM_AUTH_ERR;
+}
+
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
 	char *user;
 	int retval;
-	retval = pam_get_user(pamh, (const char**) &user, "Username: ");
+	retval = pam_get_user(pamh, (const char**) &user, NULL);
 	if (retval != PAM_SUCCESS) {
 		return retval;
 	}
+
 	return is_authenticated(user) ? PAM_SUCCESS : PAM_AUTH_ERR;
 }
 
