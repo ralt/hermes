@@ -214,7 +214,7 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 		goto safe_close;
 	}
 
-	device->public_key = malloc(sizeof(char) * device->public_key_length);
+	device->public_key = malloc((sizeof(uint8_t) * device->public_key_length) + 1);
 	if (device->public_key == NULL) {
 		fprintf(stderr, "%s: can't malloc the public key\n", strerror(errno));
 		ret = false;
@@ -222,14 +222,15 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 	}
 
 	bytes_read = fread(device->public_key,
-			   sizeof(char),
-			   RSA_PUBLIC_KEY_LENGTH,
+			   sizeof(uint8_t),
+			   device->public_key_length,
 			   fd);
-	if (bytes_read != RSA_PUBLIC_KEY_LENGTH) {
+	if (bytes_read != device->public_key_length) {
 		fprintf(stderr, "%s: can't read the public key\n", strerror(errno));
 		ret = false;
 		goto safe_close;
 	}
+	device->public_key[device->public_key_length] = '\0';
 
 	bytes_read = fread(&device->private_key_length, sizeof(uint32_t), 1, fd);
 	if (bytes_read != 1) {
@@ -238,12 +239,13 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 		goto safe_close;
 	}
 
-	device->private_key = malloc(sizeof(uint8_t) * device->private_key_length);
+	device->private_key = malloc((sizeof(uint8_t) * device->private_key_length) + 1);
 	if (device->private_key == NULL) {
 		fprintf(stderr, "%s: can't malloc the private key\n", strerror(errno));
 		ret = false;
 		goto safe_close;
 	}
+	device->private_key[device->private_key_length] = '\0';
 
 	bytes_read = fread(device->private_key,
 			   sizeof(uint8_t),
