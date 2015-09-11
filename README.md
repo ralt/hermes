@@ -7,7 +7,7 @@ Authenticate on linux by plugging your USB stick!
 
 - add scripts/id\_rsa.pub to the authorized\_keys
 
-** /!\ WARNING /!\ ** The next step will delete **ALL PARTITIONS AND DATA** of the usb key.
+**/!\ WARNING /!\** The next step will delete **ALL PARTITIONS AND DATA** of the usb key.
 
 - run ./scripts/write-test-device.sh on your usb stick (err, developer
   help needed if you can't read the script.)
