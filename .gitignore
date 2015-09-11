@@ -1,1 +1,4 @@
 scripts/test.bin
+*.o
+*.so
+hermes
