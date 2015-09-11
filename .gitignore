@@ -1,4 +1,4 @@
 scripts/test.bin
 *.o
 *.so
-hermes
+hermes-service

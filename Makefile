@@ -1,7 +1,7 @@
 CC ?= gcc
 FLAGS = -Wall -Werror -std=c99
 
-all: pam_hermes.so hermes
+all: pam_hermes.so hermes-service
 
 pam_hermes.so: pam_hermes.o
 	$(CC) -shared -Xlinker -x -o $@ $^ -lpam -lssh
@@ -9,8 +9,8 @@ pam_hermes.so: pam_hermes.o
 pam_hermes.o: pam_hermes.c
 	$(CC) $(FLAGS) -fPIC -fno-stack-protector -c $^
 
-hermes: hermes.c
-	$(CC) $(FLAGS) -Werror -o $@ $^
+hermes-service: hermes.c
+	$(CC) $(FLAGS) -o $@ $^
 
 .PHONY: clean
 

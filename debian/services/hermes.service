@@ -1,0 +1,10 @@
+[Unit]
+Description=Hermes device reader
+
+[Service]
+ExecStart=/usr/share/hermes/hermes-service
+Type=simple
+User=root
+
+[Install]
+WantedBy=multi-user.target
