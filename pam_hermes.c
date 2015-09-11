@@ -15,7 +15,8 @@
 #define FINGERPRINT_LENGTH 5
 #define RSA_TYPE 1
 
-struct hermes_device {
+struct hermes_device
+{
 	uint8_t type;
 	uint32_t public_key_length;
 	char *public_key;
@@ -35,7 +36,8 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
 	char *user;
 	int retval;
 	retval = pam_get_user(pamh, (const char**) &user, NULL);
-	if (retval != PAM_SUCCESS) {
+	if (retval != PAM_SUCCESS)
+	{
 		return retval;
 	}
 
@@ -47,7 +49,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 	char *user;
 	int retval;
 	retval = pam_get_user(pamh, (const char**) &user, NULL);
-	if (retval != PAM_SUCCESS) {
+	if (retval != PAM_SUCCESS)
+	{
 		return retval;
 	}
 
@@ -65,7 +68,8 @@ static bool is_block_device(const char *path)
 	struct stat sb;
 
 	retval = stat(path, &sb);
-	if (retval == -1) {
+	if (retval == -1)
+	{
 		return false;
 	}
 
@@ -81,20 +85,24 @@ static bool has_hermes_fingerprint(const char *path)
 	const uint8_t expected_bytes[FINGERPRINT_LENGTH] = { 82, 111, 98, 105, 110 };
 
 	fd = fopen(path, "rb");
-	if (fd == NULL) {
+	if (fd == NULL)
+	{
 		fprintf(stderr, "%s: can't read %s\n", strerror(errno), path);
 		return false;
 	}
 
 	bytes_read = fread(&bytes, sizeof(uint8_t), FINGERPRINT_LENGTH, fd);
-	if (bytes_read < 1) {
+	if (bytes_read < 1)
+	{
 		fprintf(stderr, "%s: can't read enough bytes\n", strerror(errno));
 		ret = false;
 		goto safe_exit;
 	}
 
-	for (size_t i = 0; i < bytes_read; i++) {
-		if (bytes[i] != expected_bytes[i]) {
+	for (size_t i = 0; i < bytes_read; i++)
+	{
+		if (bytes[i] != expected_bytes[i])
+		{
 			ret = false;
 			goto safe_exit;
 		}
@@ -103,8 +111,9 @@ static bool has_hermes_fingerprint(const char *path)
 	ret = true;
 	goto safe_exit;
 
- safe_exit:
-	if (fclose(fd) != 0) {
+safe_exit:
+	if (fclose(fd) != 0)
+	{
 		fprintf(stderr, "%s: can't close %s\n", strerror(errno), path);
 		return false;
 	}
@@ -114,11 +123,13 @@ static bool has_hermes_fingerprint(const char *path)
 
 static bool is_hermes_device(const char *path)
 {
-	if (!is_block_device(path)) {
+	if (!is_block_device(path))
+	{
 		return false;
 	}
 
-	if (!has_hermes_fingerprint(path)) {
+	if (!has_hermes_fingerprint(path))
+	{
 		return false;
 	}
 
@@ -133,7 +144,8 @@ static bool can_login(struct hermes_device *device, const char *user)
 	bool ret;
 
 	sess = ssh_new();
-	if (sess == NULL) {
+	if (sess == NULL)
+	{
 		fprintf(stderr, "%s: can't create ssh session\n", strerror(errno));
 		return false;
 	}
@@ -141,7 +153,8 @@ static bool can_login(struct hermes_device *device, const char *user)
 	ssh_options_set(sess, SSH_OPTIONS_HOST, "127.0.0.1");
 
 	rc = ssh_connect(sess);
-	if (rc != SSH_OK) {
+	if (rc != SSH_OK)
+	{
 		fprintf(stderr, "%s: can't connect to local ssh\n", strerror(errno));
 		ret = false;
 		goto clean_ssh;
@@ -149,13 +162,15 @@ static bool can_login(struct hermes_device *device, const char *user)
 
 	if ((ssh_pki_import_pubkey_base64(device->public_key,
 					  SSH_KEYTYPE_RSA,
-					  &public_key)) != SSH_OK) {
+					  &public_key)) != SSH_OK)
+	{
 		fprintf(stderr, "%s: can't import the public key\n", strerror(errno));
 		ret = false;
 		goto clean_connection;
 	}
 
-	if ((ssh_userauth_try_publickey(sess, user, public_key)) != SSH_AUTH_SUCCESS) {
+	if ((ssh_userauth_try_publickey(sess, user, public_key)) != SSH_AUTH_SUCCESS)
+	{
 		fprintf(stderr, "%s: the public key isn't authorized\n", strerror(errno));
 		ret = false;
 		goto clean_public_key;
@@ -165,13 +180,15 @@ static bool can_login(struct hermes_device *device, const char *user)
 					   NULL,
 					   NULL,
 					   NULL,
-					   &private_key)) != SSH_OK) {
+					   &private_key)) != SSH_OK)
+	{
 		fprintf(stderr, "%s: can't import the private key\n", strerror(errno));
 		ret = false;
 		goto clean_public_key;
 	}
 
-	if ((ssh_userauth_publickey(sess, user, private_key)) != SSH_AUTH_SUCCESS) {
+	if ((ssh_userauth_publickey(sess, user, private_key)) != SSH_AUTH_SUCCESS)
+	{
 		fprintf(stderr, "%s: the private key is invalid\n", strerror(errno));
 		ret = false;
 		goto clean_private_key;
@@ -179,16 +196,16 @@ static bool can_login(struct hermes_device *device, const char *user)
 
 	ret = true;
 
- clean_private_key:
+clean_private_key:
 	ssh_key_free(private_key);
 
- clean_public_key:
+clean_public_key:
 	ssh_key_free(public_key);
 
- clean_connection:
+clean_connection:
 	ssh_disconnect(sess);
 
- clean_ssh:
+clean_ssh:
 	ssh_free(sess);
 
 	return ret;
@@ -201,12 +218,14 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 	bool ret;
 
 	fd = fopen(path, "rb");
-	if (fd == NULL) {
+	if (fd == NULL)
+	{
 		fprintf(stderr, "%s: can't read %s\n", strerror(errno), path);
 		return false;
 	}
 
-	if ((fseek(fd, FINGERPRINT_LENGTH, 0)) != 0) {
+	if ((fseek(fd, FINGERPRINT_LENGTH, 0)) != 0)
+	{
 		fprintf(stderr, "%s: can't fseek %d bytes in %s\n",
 			strerror(errno), FINGERPRINT_LENGTH, path);
 		ret = false;
@@ -214,21 +233,24 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 	}
 
 	bytes_read = fread(&device->type, sizeof(uint8_t), 1, fd);
-	if (bytes_read < 1) {
+	if (bytes_read < 1)
+	{
 		fprintf(stderr, "%s: can't read the type\n", strerror(errno));
 		ret = false;
 		goto safe_close;
 	}
 
 	bytes_read = fread(&device->public_key_length, sizeof(uint32_t), 1, fd);
-	if (bytes_read != 1) {
+	if (bytes_read != 1)
+	{
 		fprintf(stderr, "%s: can't read the public key length\n", strerror(errno));
 		ret = false;
 		goto safe_close;
 	}
 
 	device->public_key = malloc((sizeof(uint8_t) * device->public_key_length) + 1);
-	if (device->public_key == NULL) {
+	if (device->public_key == NULL)
+	{
 		fprintf(stderr, "%s: can't malloc the public key\n", strerror(errno));
 		ret = false;
 		goto safe_close;
@@ -238,7 +260,8 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 			   sizeof(uint8_t),
 			   device->public_key_length,
 			   fd);
-	if (bytes_read != device->public_key_length) {
+	if (bytes_read != device->public_key_length)
+	{
 		fprintf(stderr, "%s: can't read the public key\n", strerror(errno));
 		ret = false;
 		goto safe_close;
@@ -246,14 +269,16 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 	device->public_key[device->public_key_length] = '\0';
 
 	bytes_read = fread(&device->private_key_length, sizeof(uint32_t), 1, fd);
-	if (bytes_read != 1) {
+	if (bytes_read != 1)
+	{
 		fprintf(stderr, "%s: can't read the private key length\n", strerror(errno));
 		ret = false;
 		goto safe_close;
 	}
 
 	device->private_key = malloc((sizeof(uint8_t) * device->private_key_length) + 1);
-	if (device->private_key == NULL) {
+	if (device->private_key == NULL)
+	{
 		fprintf(stderr, "%s: can't malloc the private key\n", strerror(errno));
 		ret = false;
 		goto safe_close;
@@ -264,7 +289,8 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 			   sizeof(uint8_t),
 			   device->private_key_length,
 			   fd);
-	if (bytes_read != device->private_key_length) {
+	if (bytes_read != device->private_key_length)
+	{
 		fprintf(stderr, "%s: can't read the private key\n", strerror(errno));
 		ret = false;
 		goto safe_close;
@@ -272,8 +298,9 @@ static bool hermes_new_device(struct hermes_device *device, char *path)
 
 	ret = true;
 
- safe_close:
-	if (fclose(fd) != 0) {
+safe_close:
+	if (fclose(fd) != 0)
+	{
 		fprintf(stderr, "%s: can't close %s\n", strerror(errno), path);
 		return false;
 	}
@@ -296,18 +323,23 @@ static bool is_authenticated(const char *user)
 	struct hermes_device *device;
 
 	retval = glob("/dev/*", GLOB_ERR | GLOB_NOSORT, globerr, &files);
-	if (retval != 0) {
+	if (retval != 0)
+	{
 		return false;
 	}
 
-	for (size_t i = 0; i < files.gl_pathc; i++) {
-		if (is_hermes_device(files.gl_pathv[i])) {
+	for (size_t i = 0; i < files.gl_pathc; i++)
+	{
+		if (is_hermes_device(files.gl_pathv[i]))
+		{
 			device = malloc(sizeof(struct hermes_device));
-			if (device == NULL) {
+			if (device == NULL)
+			{
 				break;
 			}
 
-			if ((hermes_new_device(device, files.gl_pathv[i])) != true) {
+			if ((hermes_new_device(device, files.gl_pathv[i])) != true)
+			{
 				break;
 			}
 
@@ -319,10 +351,10 @@ static bool is_authenticated(const char *user)
 	ret = false;
 	goto safe_exit;
 
- free_hermes_device:
+free_hermes_device:
 	hermes_free_device(device);
 
- safe_exit:
+safe_exit:
 	globfree(&files);
 	return ret;
 }
