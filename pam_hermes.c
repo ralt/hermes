@@ -73,7 +73,7 @@ static bool is_block_device(const char *path)
 		return false;
 	}
 
-	return (sb.st_mode & S_IFMT) == S_IFBLK;
+	return S_ISBLK(sb.st_mode);
 }
 
 static bool has_hermes_fingerprint(const char *path)
