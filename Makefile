@@ -9,10 +9,10 @@ pam_hermes.so: pam_hermes.o
 pam_hermes.o: pam_hermes.c
 	$(CC) $(FLAGS) -fPIC -fno-stack-protector -c $^
 
-hermes-service: hermes.c
+hermes-service: hermes-service.c
 	$(CC) $(FLAGS) -o $@ $^
 
 .PHONY: clean
 
 clean:
-	rm -f *.o *.so hermes
+	rm -f *.o *.so hermes-service
