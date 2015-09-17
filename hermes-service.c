@@ -11,13 +11,7 @@
   one of these 2 results:
     - first byte 0, means "there is no hermes device"
     - first byte 1, means "there is an hermes device". It is followed
-      by 4 bytes specifying the length of the data coming afterwards,
-      namely:
-	- 1 byte for the type
-	- 4 bytes for the length of the public key
-	- x bytes for the public key
-	- 4 bytes for the length of the private key
-	- y bytes for the private key
+      by the 128-bytes token.
  */
 
 #include <stdio.h>
@@ -41,6 +35,8 @@
 
 #define RET_NO_HERMES_DEVICE 0
 #define RET_HERMES_DEVICE_FOUND 1
+
+#define TOKEN_LENGTH 128
 
 static int globerr(const char*, int);
 static bool is_block_device(const char*);
@@ -112,15 +108,16 @@ int main(int argc, char *argv[])
 			size_t buffer_length = handle_command(command, &buffer);
 			uint32_t data_length = htonl(buffer_length);
 
-			if (write(cl, &data_length, sizeof(data_length)) != sizeof(data_length))
+			if (write(cl, &data_length, sizeof(data_length)) !=
+			    sizeof(data_length))
 			{
-				perror("write");
+				perror("write data_length");
 				exit(EXIT_FAILURE);
 			}
 
 			if (write(cl, buffer, buffer_length) != buffer_length)
 			{
-				perror("write");
+				perror("write buffer");
 				exit(EXIT_FAILURE);
 			}
 
@@ -137,6 +134,11 @@ int main(int argc, char *argv[])
 		{
 			continue;
 		}
+	}
+
+	if (close(fd) != 0)
+	{
+		exit(EXIT_FAILURE);
 	}
 
 	return EXIT_SUCCESS;
@@ -161,14 +163,17 @@ static size_t handle_command(uint32_t command, uint8_t **buffer)
 		if (is_hermes_device(files.gl_pathv[i]))
 		{
 			device_found = true;
-			hermes_device = malloc(strlen(files.gl_pathv[i]) * sizeof(char));
+			hermes_device = malloc(strlen(files.gl_pathv[i]) *
+					       sizeof(uint8_t));
 			if (hermes_device == NULL)
 			{
 				perror("malloc hermes_device");
 				exit(EXIT_FAILURE);
 			}
 
-			memcpy(hermes_device, files.gl_pathv[i], strlen(files.gl_pathv[i]) + 1);
+			memcpy(hermes_device,
+			       files.gl_pathv[i],
+			       strlen(files.gl_pathv[i]) + 1);
 		}
 	}
 
@@ -203,9 +208,7 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	FILE *fd;
 	size_t bytes_read;
 
-	uint8_t type;
-	uint32_t public_key_length, private_key_length;
-	uint8_t *public_key, *private_key;
+	uint8_t token[TOKEN_LENGTH];
 
 	uint32_t ret = 0;
 
@@ -223,113 +226,29 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 		goto safe_close;
 	}
 
-	bytes_read = fread(&type, sizeof(uint8_t), 1, fd);
-	if (bytes_read < 1)
-	{
-		fprintf(stderr, "%s: can't read the type\n", strerror(errno));
-		goto safe_close;
-	}
-
-	bytes_read = fread(&public_key_length, sizeof(uint32_t), 1, fd);
-	if (bytes_read != 1)
-	{
-		fprintf(stderr, "%s: can't read the public key length\n", strerror(errno));
-		goto safe_close;
-	}
-
-	public_key = malloc((sizeof(uint8_t) * public_key_length) + 1);
-	if (public_key == NULL)
-	{
-		fprintf(stderr, "%s: can't malloc the public key\n", strerror(errno));
-		goto safe_close;
-	}
-
-	bytes_read = fread(public_key,
+	bytes_read = fread(token,
 			   sizeof(uint8_t),
-			   public_key_length,
+			   TOKEN_LENGTH,
 			   fd);
-	if (bytes_read != public_key_length)
+	if (bytes_read != TOKEN_LENGTH)
 	{
-		fprintf(stderr, "%s: can't read the public key\n", strerror(errno));
-		goto safe_close;
-	}
-
-	bytes_read = fread(&private_key_length, sizeof(uint32_t), 1, fd);
-	if (bytes_read != 1)
-	{
-		fprintf(stderr, "%s: can't read the private key length\n", strerror(errno));
-		goto safe_close;
-	}
-
-	private_key = malloc((sizeof(uint8_t) * private_key_length) + 1);
-	if (private_key == NULL)
-	{
-		fprintf(stderr, "%s: can't malloc the private key\n", strerror(errno));
-		goto safe_close;
-	}
-
-	bytes_read = fread(private_key,
-			   sizeof(uint8_t),
-			   private_key_length,
-			   fd);
-	if (bytes_read != private_key_length)
-	{
-		fprintf(stderr, "%s: can't read the private key\n", strerror(errno));
+		fprintf(stderr, "%s: can't read the token\n", strerror(errno));
 		goto safe_close;
 	}
 
 	/* Now copy all the data to the buffer */
-	ret = sizeof(type) + sizeof(public_key_length) + public_key_length +
-		sizeof(private_key_length) + private_key_length;
+	ret = TOKEN_LENGTH;
 
 	/* Let's not forget that there is 1 already-malloced byte for the command. */
-	*buffer = realloc(*buffer, sizeof(uint8_t) * (1 + ret));
+	*buffer = realloc(*buffer, sizeof(uint8_t) * (offset + ret));
 	if (*buffer == NULL)
 	{
 		fprintf(stderr, "%s: can't malloc buffer\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
-	/* type
-
-	   one byte so no need for pointer magic. I could write it as such:
-	   buffer[offset] = (&type)[0];
-	 */
-	(*buffer)[offset] = type;
-
-	offset = offset + sizeof(type);
-
-	/* public key length */
-	for (size_t i = 0; i < sizeof(public_key_length); i++)
-	{
-		(*buffer)[i + offset] = (&public_key_length)[i];
-	}
-
-	offset = offset + sizeof(public_key_length);
-
-	/* public key */
-	for (size_t i = 0; i < public_key_length; i++)
-	{
-		(*buffer)[i + offset] = public_key[i];
-	}
-
-	offset = offset + public_key_length;
-
-	/* private key length */
-	for (size_t i = 0; i < sizeof(private_key_length); i++)
-	{
-		(*buffer)[i + offset] = (&private_key_length)[i];
-	}
-
-	offset = offset + sizeof(private_key_length);
-
-	/* private key */
-	for (size_t i = 0; i < private_key_length; i++)
-	{
-		(*buffer)[i + offset] = private_key[i];
-	}
-
-	offset = offset + private_key_length;
+	/* token */
+	memcpy(*buffer + offset, token, TOKEN_LENGTH);
 
  safe_close:
 	if (fclose(fd) != 0)
@@ -338,7 +257,7 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 		return false;
 	}
 
-	return ret + sizeof(ret);
+	return ret + sizeof(uint8_t);
 }
 
 static int globerr(const char *path, int eerrno)

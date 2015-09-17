@@ -4,7 +4,7 @@ FLAGS = -Wall -Werror -std=c99
 all: pam_hermes.so hermes-service
 
 pam_hermes.so: pam_hermes.o
-	$(CC) -shared -Xlinker -x -o $@ $^ -lpam -lssh
+	$(CC) -shared -Xlinker -x -o $@ $^ -lpam
 
 pam_hermes.o: pam_hermes.c
 	$(CC) $(FLAGS) -fPIC -fno-stack-protector -c $^
