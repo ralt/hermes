@@ -274,7 +274,8 @@ static bool is_authenticated(const char *user)
 		if ((rc = read(fd, buffer, data_length)) != data_length)
 		{
 			perror("read buffer");
-			goto error_exit;
+			free(device);
+			return false;
 		}
 
 		if (hermes_new_device(device, buffer) != true)
