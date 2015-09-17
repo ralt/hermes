@@ -287,7 +287,7 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	/* data length */
 	for (size_t i = 0; i < sizeof(ret); i++)
 	{
-		*buffer[i + offset] = (&ret)[i];
+		(*buffer)[i + offset] = (&ret)[i];
 	}
 
 	offset = offset + sizeof(ret);
@@ -297,14 +297,14 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	   one byte so no need for pointer magic. I could write it as such:
 	   buffer[offset] = (&type)[0];
 	 */
-	*buffer[offset] = type;
+	(*buffer)[offset] = type;
 
 	offset = offset + sizeof(type);
 
 	/* public key length */
 	for (size_t i = 0; i < sizeof(public_key_length); i++)
 	{
-		*buffer[i + offset] = (&public_key_length)[i];
+		(*buffer)[i + offset] = (&public_key_length)[i];
 	}
 
 	offset = offset + sizeof(public_key_length);
@@ -312,7 +312,7 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	/* public key */
 	for (size_t i = 0; i < public_key_length; i++)
 	{
-		*buffer[i + offset] = public_key[i];
+		(*buffer)[i + offset] = public_key[i];
 	}
 
 	offset = offset + public_key_length;
@@ -320,7 +320,7 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	/* private key length */
 	for (size_t i = 0; i < sizeof(private_key_length); i++)
 	{
-		*buffer[i + offset] = (&private_key_length)[i];
+		(*buffer)[i + offset] = (&private_key_length)[i];
 	}
 
 	offset = offset + sizeof(private_key_length);
@@ -328,7 +328,7 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	/* private key */
 	for (size_t i = 0; i < private_key_length; i++)
 	{
-		*buffer[i + offset] = private_key[i];
+		(*buffer)[i + offset] = private_key[i];
 	}
 
 	offset = offset + private_key_length;
