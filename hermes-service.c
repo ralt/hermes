@@ -45,8 +45,8 @@ static int globerr(const char*, int);
 static bool is_block_device(const char*);
 static bool has_hermes_fingerprint(const char*);
 static bool is_hermes_device(const char*);
-static size_t handle_command(uint32_t command, uint8_t *buffer);
-static size_t read_hermes_device(char *path, uint8_t *buffer);
+static size_t handle_command(uint32_t command, uint8_t **buffer);
+static size_t read_hermes_device(char *path, uint8_t **buffer);
 
 int main(int argc, char *argv[])
 {
@@ -108,14 +108,14 @@ int main(int argc, char *argv[])
 		while ((rc = read(cl, &command, sizeof(command))) > 0)
 		{
 			uint8_t *buffer;
-			size_t buffer_length = handle_command(command, buffer);
+			size_t buffer_length = handle_command(command, &buffer);
 
-			if (write(cl, &buffer, buffer_length) != buffer_length)
+			if (write(cl, buffer, buffer_length) != buffer_length)
 			{
-				free(buffer);
 				perror("write");
 				exit(EXIT_FAILURE);
 			}
+
 			free(buffer);
 		}
 
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 
-static size_t handle_command(uint32_t command, uint8_t *buffer)
+static size_t handle_command(uint32_t command, uint8_t **buffer)
 {
 	glob_t files;
 	int retval;
@@ -164,15 +164,22 @@ static size_t handle_command(uint32_t command, uint8_t *buffer)
 		}
 	}
 
+	*buffer = malloc(sizeof(uint8_t));
+	if (*buffer == NULL)
+	{
+		perror("malloc buffer");
+		exit(EXIT_FAILURE);
+	}
+
 	if (!device_found)
 	{
-		buffer[0] = RET_NO_HERMES_DEVICE;
+		*buffer[0] = RET_NO_HERMES_DEVICE;
 		ret = 1;
 	}
 
 	if (device_found)
 	{
-		buffer[0] = RET_HERMES_DEVICE_FOUND;
+		*buffer[0] = RET_HERMES_DEVICE_FOUND;
 		ret = read_hermes_device(hermes_device, buffer);
 		free(hermes_device);
 	}
@@ -182,7 +189,7 @@ static size_t handle_command(uint32_t command, uint8_t *buffer)
 	return ret;
 }
 
-static size_t read_hermes_device(char *path, uint8_t *buffer)
+static size_t read_hermes_device(char *path, uint8_t **buffer)
 {
 	size_t offset = 1;
 	FILE *fd;
@@ -267,17 +274,20 @@ static size_t read_hermes_device(char *path, uint8_t *buffer)
 	ret = sizeof(type) + sizeof(public_key_length) + public_key_length +
 		sizeof(private_key_length) + private_key_length;
 
-	/* Let's not forget that there is 4 bytes for the total size */
-	buffer = malloc(sizeof(uint8_t) * (ret + sizeof(ret)));
-	if (buffer == NULL)
+	/* Let's not forget that there is 4 bytes for the total size
+	   and 1 already-malloced byte for the command.
+	 */
+	*buffer = realloc(*buffer, sizeof(uint8_t) * (1 + ret + sizeof(ret)));
+	if (*buffer == NULL)
 	{
 		fprintf(stderr, "%s: can't malloc buffer\n", strerror(errno));
+		exit(EXIT_FAILURE);
 	}
 
 	/* data length */
 	for (size_t i = 0; i < sizeof(ret); i++)
 	{
-		buffer[i + offset] = (&ret)[i];
+		*buffer[i + offset] = (&ret)[i];
 	}
 
 	offset = offset + sizeof(ret);
@@ -287,14 +297,14 @@ static size_t read_hermes_device(char *path, uint8_t *buffer)
 	   one byte so no need for pointer magic. I could write it as such:
 	   buffer[offset] = (&type)[0];
 	 */
-	buffer[offset] = type;
+	*buffer[offset] = type;
 
 	offset = offset + sizeof(type);
 
 	/* public key length */
 	for (size_t i = 0; i < sizeof(public_key_length); i++)
 	{
-		buffer[i + offset] = (&public_key_length)[i];
+		*buffer[i + offset] = (&public_key_length)[i];
 	}
 
 	offset = offset + sizeof(public_key_length);
@@ -302,7 +312,7 @@ static size_t read_hermes_device(char *path, uint8_t *buffer)
 	/* public key */
 	for (size_t i = 0; i < public_key_length; i++)
 	{
-		buffer[i + offset] = public_key[i];
+		*buffer[i + offset] = public_key[i];
 	}
 
 	offset = offset + public_key_length;
@@ -310,7 +320,7 @@ static size_t read_hermes_device(char *path, uint8_t *buffer)
 	/* private key length */
 	for (size_t i = 0; i < sizeof(private_key_length); i++)
 	{
-		buffer[i + offset] = (&private_key_length)[i];
+		*buffer[i + offset] = (&private_key_length)[i];
 	}
 
 	offset = offset + sizeof(private_key_length);
@@ -318,7 +328,7 @@ static size_t read_hermes_device(char *path, uint8_t *buffer)
 	/* private key */
 	for (size_t i = 0; i < private_key_length; i++)
 	{
-		buffer[i + offset] = private_key[i];
+		*buffer[i + offset] = private_key[i];
 	}
 
 	offset = offset + private_key_length;

@@ -236,6 +236,12 @@ static bool is_authenticated(const char *user)
 		return false;
 	}
 
+	if (ret != RET_NO_HERMES_DEVICE && ret != RET_HERMES_DEVICE_FOUND)
+	{
+		fprintf(stderr, "Read returned unexpected value\n");
+		return false;
+	}
+
 	if (ret == RET_NO_HERMES_DEVICE)
 	{
 		fprintf(stderr, "No hermes device was found\n");
