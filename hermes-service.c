@@ -199,7 +199,7 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	uint32_t public_key_length, private_key_length;
 	uint8_t *public_key, *private_key;
 
-	uint32_t ret;
+	uint32_t ret = 0;
 
 	fd = fopen(path, "rb");
 	if (fd == NULL)
@@ -334,8 +334,6 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	offset = offset + private_key_length;
 
  safe_close:
-	ret = 0;
-
 	if (fclose(fd) != 0)
 	{
 		fprintf(stderr, "%s: can't close %s\n", strerror(errno), path);

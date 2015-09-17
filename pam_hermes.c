@@ -250,18 +250,18 @@ static bool is_authenticated(const char *user)
 
 	if (ret == RET_HERMES_DEVICE_FOUND)
 	{
+		if ((rc = read(fd, &data_length, sizeof(data_length))) !=
+		    sizeof(data_length))
+		{
+			perror("read data_length");
+			return false;
+		}
+
 		device = malloc(sizeof(struct hermes_device));
 		if (device == NULL)
 		{
 			perror("malloc hermes device");
 			return false;
-		}
-
-		if ((rc = read(fd, &data_length, sizeof(data_length))) !=
-		    sizeof(data_length))
-		{
-			perror("read data_length");
-			goto error_exit;
 		}
 
 		buffer = malloc(sizeof(uint8_t) * data_length);
