@@ -33,6 +33,7 @@
 #include <grp.h>
 #include <errno.h>
 #include <glob.h>
+#include <arpa/inet.h>
 
 #define FINGERPRINT_LENGTH 5
 
@@ -109,6 +110,13 @@ int main(int argc, char *argv[])
 		{
 			uint8_t *buffer;
 			size_t buffer_length = handle_command(command, &buffer);
+			uint32_t data_length = htonl(buffer_length);
+
+			if (write(cl, &data_length, sizeof(data_length)) != sizeof(data_length))
+			{
+				perror("write");
+				exit(EXIT_FAILURE);
+			}
 
 			if (write(cl, buffer, buffer_length) != buffer_length)
 			{
@@ -274,23 +282,13 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 	ret = sizeof(type) + sizeof(public_key_length) + public_key_length +
 		sizeof(private_key_length) + private_key_length;
 
-	/* Let's not forget that there is 4 bytes for the total size
-	   and 1 already-malloced byte for the command.
-	 */
-	*buffer = realloc(*buffer, sizeof(uint8_t) * (1 + ret + sizeof(ret)));
+	/* Let's not forget that there is 1 already-malloced byte for the command. */
+	*buffer = realloc(*buffer, sizeof(uint8_t) * (1 + ret));
 	if (*buffer == NULL)
 	{
 		fprintf(stderr, "%s: can't malloc buffer\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-
-	/* data length */
-	for (size_t i = 0; i < sizeof(ret); i++)
-	{
-		(*buffer)[i + offset] = (&ret)[i];
-	}
-
-	offset = offset + sizeof(ret);
 
 	/* type
 

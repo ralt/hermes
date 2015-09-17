@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <arpa/inet.h>
 
 #define RSA_TYPE 1
 
@@ -206,10 +207,9 @@ static bool is_authenticated(const char *user)
 	struct sockaddr_un addr;
 	int fd, rc;
 	uint32_t command = COMMAND_GET_KEYS;
-	uint32_t data_length;
+	uint32_t data_length = 0;
 	bool retval;
 	struct hermes_device *device;
-	uint8_t ret;
 	uint8_t *buffer;
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
@@ -230,33 +230,42 @@ static bool is_authenticated(const char *user)
 
 	write(fd, &command, sizeof(command));
 
-	if ((rc = read(fd, &ret, sizeof(ret))) != sizeof(ret))
+	if ((rc = read(fd, &data_length, sizeof(data_length))) != sizeof(data_length))
 	{
-		perror("read ret");
+		perror("read data_length");
 		return false;
 	}
 
-	if (ret != RET_NO_HERMES_DEVICE && ret != RET_HERMES_DEVICE_FOUND)
+	data_length = ntohl(data_length);
+
+	buffer = malloc(sizeof(uint8_t) * data_length);
+	if (buffer == NULL)
+	{
+		perror("malloc buffer");
+		return false;
+	}
+
+	if ((rc = read(fd, buffer, data_length)) != data_length)
+	{
+		perror("read buffer");
+		free(buffer);
+		return false;
+	}
+
+	if (buffer[0] != RET_NO_HERMES_DEVICE && buffer[0] != RET_HERMES_DEVICE_FOUND)
 	{
 		fprintf(stderr, "Read returned unexpected value\n");
 		return false;
 	}
 
-	if (ret == RET_NO_HERMES_DEVICE)
+	if (buffer[0] == RET_NO_HERMES_DEVICE)
 	{
 		fprintf(stderr, "No hermes device was found\n");
 		return false;
 	}
 
-	if (ret == RET_HERMES_DEVICE_FOUND)
+	if (buffer[0] == RET_HERMES_DEVICE_FOUND)
 	{
-		if ((rc = read(fd, &data_length, sizeof(data_length))) !=
-		    sizeof(data_length))
-		{
-			perror("read data_length");
-			return false;
-		}
-
 		device = malloc(sizeof(struct hermes_device));
 		if (device == NULL)
 		{
@@ -264,35 +273,21 @@ static bool is_authenticated(const char *user)
 			return false;
 		}
 
-		buffer = malloc(sizeof(uint8_t) * data_length);
-		if (buffer == NULL)
-		{
-			perror("malloc buffer");
-			return false;
-		}
-
-		if ((rc = read(fd, buffer, data_length)) != data_length)
-		{
-			perror("read buffer");
-			free(device);
-			return false;
-		}
-
-		if (hermes_new_device(device, buffer) != true)
+		if (hermes_new_device(device, buffer + sizeof(uint8_t)) != true)
 		{
 			retval = false;
+			free(device);
 			goto error_exit;
 		}
 
 		retval = can_login(device, user);
-		goto free_hermes_device;
 	}
 
-error_exit:
-	retval = false;
-
-free_hermes_device:
 	hermes_free_device(device);
+
+ error_exit:
+	retval = false;
+	free(buffer);
 
 	return retval;
 }
