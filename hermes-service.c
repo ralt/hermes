@@ -160,7 +160,7 @@ static size_t handle_command(uint32_t command, uint8_t **buffer)
 				exit(EXIT_FAILURE);
 			}
 
-			memcpy(hermes_device, files.gl_pathv[i], strlen(files.gl_pathv[i]));
+			memcpy(hermes_device, files.gl_pathv[i], strlen(files.gl_pathv[i]) + 1);
 		}
 	}
 
