@@ -52,6 +52,23 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 	return is_authenticated(user) ? PAM_SUCCESS : PAM_AUTH_ERR;
 }
 
+/* Taken from http://security.stackexchange.com/questions/49849/timing-safe-string-comparison-avoiding-length-leak */
+bool timing_safe_compare(const char *known,
+			 const size_t known_len,
+			 const char *unknown,
+			 const size_t unknown_len) {
+	/* Safe since all strings **will** be null terminated */
+	const size_t mod_len = known_len + 1;
+	int result = 0;
+
+	result = known_len - unknown_len;
+	for (size_t i = 0; i < unknown_len; i++) {
+		result |= known[i % mod_len] ^ unknown[i];
+	}
+
+	return result == 0 ? true : false;
+}
+
 static bool can_login(const uint8_t *token, const char *user)
 {
 	FILE *fd;
@@ -97,10 +114,10 @@ static bool can_login(const uint8_t *token, const char *user)
 		goto safe_close;
 	}
 
-	if (strncmp((const char*) token, local_token, TOKEN_LENGTH) == 0)
-	{
-		retval = true;
-	}
+	retval = timing_safe_compare(local_token,
+				     TOKEN_LENGTH,
+				     (const char*) token,
+				     TOKEN_LENGTH);
 
  safe_close:
 	if (fclose(fd) != 0)
