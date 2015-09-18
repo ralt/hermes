@@ -6,10 +6,10 @@ Demo: https://www.youtube.com/watch?v=W7L9FrIDYgU
 
 ## howto
 
-**/!\ WARNING /!\** The next step will delete **ALL PARTITIONS AND DATA** of the usb key.
+```
+$ hermes help
+```
 
-- run ./scripts/write-test-device.sh on your usb stick (err, developer
-  help needed if you can't read the script.)
 - add your user to the "hermes" group
 - see the debian/services/hermes.service sample to see how to start
   the hermes service
@@ -17,7 +17,6 @@ Demo: https://www.youtube.com/watch?v=W7L9FrIDYgU
 
 ## todo
 
-- write a CLI utility to create a "hermes device"
 - better error handling. Right now it's fprintf(stderr) or perror()
   everywhere, randomly. Make it consistent.
 - regenerate the token at every login: see if it's interesting.
