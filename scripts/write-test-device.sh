@@ -1,10 +1,5 @@
 #!/usr/bin/sbcl --script
 
-(load (merge-pathnames #p".sbclrc" (user-homedir-pathname)))
-
-(ql:quickload :alexandria)
-(ql:quickload :cl-ppcre)
-
 (defpackage #:hermes
   (:use :cl))
 
