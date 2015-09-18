@@ -5,4 +5,6 @@
   :serial t
   :components ((:file "package")
                (:file "command")
+               (:file "help")
+               (:file "write")
                (:file "hermes")))
