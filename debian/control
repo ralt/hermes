@@ -2,7 +2,7 @@ Source: hermes
 Section: unknown
 Priority: optional
 Maintainer: Florian Margaine <florian@margaine.com>
-Build-Depends: debhelper (>= 9), autotools-dev
+Build-Depends: debhelper (>= 9), autotools-dev, sbcl, curl, libpam0g-dev
 Standards-Version: 3.9.6
 
 Package: hermes

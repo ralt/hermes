@@ -5,3 +5,6 @@ hermes-service
 core
 hermes
 quicklisp-manifest.txt
+.quicklocal
+bin/
+quicklisp.lisp

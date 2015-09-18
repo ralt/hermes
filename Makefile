@@ -2,6 +2,10 @@ CC ?= gcc
 FLAGS = -Wall -Werror -std=c99
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 CLI_SOURCES := $(wildcard cli/*.lisp) $(wildcard cli/*.asd)
+QUICKLISP_SCRIPT=http://beta.quicklisp.org/quicklisp.lisp
+LOCAL_OPTS=--noinform --noprint --disable-debugger --no-sysinit --no-userinit
+QL_OPTS=--load $(QL_LOCAL)/setup.lisp
+QL_LOCAL=$(PWD)/.quicklocal/quicklisp
 
 all: pam_hermes.so hermes-service hermes
 
@@ -17,19 +21,31 @@ hermes-service: hermes-service.c
 .PHONY: clean
 
 clean:
-	rm -f *.o *.so hermes-service
+	rm -rf *.o *.so hermes-service hermes .quicklocal/ quicklisp.lisp bin/
 
-hermes: quicklisp-manifest.txt $(CLI_SOURCES)
-	@buildapp \
-		--manifest-file quicklisp-manifest.txt \
+bin:
+	@mkdir -p bin
+
+bin/buildapp: $(QL_LOCAL)/setup.lisp bin
+	@cd $(shell sbcl $(LOCAL_OPTS) $(QL_OPTS) \
+				--eval '(ql:quickload :buildapp :silent t)' \
+				--eval '(format t "~A~%" (asdf:system-source-directory :buildapp))' \
+				--eval '(quit)') && \
+	$(MAKE) DESTDIR=$(PWD) install
+
+hermes: $(CLI_SOURCES) bin/buildapp
+	@bin/buildapp \
+		--asdf-tree $(QL_LOCAL)/local-projects \
+		--asdf-tree $(QL_LOCAL)/dists \
 		--asdf-path cli/ \
 		--load-system hermes \
 		--eval '(setf *debugger-hook* (lambda (c h) (declare (ignore h)) (format t "~A~%" c) (uiop:quit -1)))' \
 		--compress-core \
 		--output hermes --entry hermes:main
 
-quicklisp-manifest.txt:
-	@sbcl --non-interactive \
-		--eval '(push #P"$(ROOT_DIR)/cli/" asdf:*central-registry*)' \
-		--eval '(ql:quickload :hermes)' \
-		--eval '(ql:write-asdf-manifest-file "quicklisp-manifest.txt")'
+$(QL_LOCAL)/setup.lisp:
+	@curl -O $(QUICKLISP_SCRIPT)
+	@sbcl $(LOCAL_OPTS) \
+		--load quicklisp.lisp \
+		--eval '(quicklisp-quickstart:install :path "$(QL_LOCAL)")' \
+		--eval '(quit)'
