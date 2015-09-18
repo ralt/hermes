@@ -17,9 +17,12 @@ Demo: https://www.youtube.com/watch?v=W7L9FrIDYgU
 
 ## todo
 
-- read a fat32 filesystem instead of raw block devices
+- make it work in a partition instead of whole disk (should be an
+  fdisk mumbling on my side, really)
+- write a CLI utility to create a "hermes device"
 - better error handling. Right now it's fprintf(stderr) or perror()
   everywhere, randomly. Make it consistent.
+- regenerate the token at every login: see if it's interesting.
 
 ## process
 
