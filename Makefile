@@ -2,9 +2,6 @@ CC ?= gcc
 FLAGS = -Wall -Werror -std=c99
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 CLI_SOURCES := $(wildcard cli/*.lisp) $(wildcard cli/*.asd)
-QUICKLISP_SCRIPT=http://beta.quicklisp.org/quicklisp.lisp
-LOCAL_OPTS=--noinform --noprint --disable-debugger --no-sysinit --no-userinit
-QL_OPTS=--load $(QL_LOCAL)/setup.lisp
 QL_LOCAL=$(PWD)/.quicklocal/quicklisp
 
 all: pam_hermes.so hermes-service hermes
@@ -21,20 +18,10 @@ hermes-service: hermes-service.c
 .PHONY: clean
 
 clean:
-	rm -rf *.o *.so hermes-service hermes .quicklocal/ quicklisp.lisp bin/
+	rm -rf *.o *.so hermes-service hermes .quicklocal/ quicklisp.lisp
 
-bin:
-	@mkdir -p bin
-
-bin/buildapp: $(QL_LOCAL)/setup.lisp bin
-	@cd $(shell sbcl $(LOCAL_OPTS) $(QL_OPTS) \
-				--eval '(ql:quickload :buildapp :silent t)' \
-				--eval '(format t "~A~%" (asdf:system-source-directory :buildapp))' \
-				--eval '(quit)') && \
-	$(MAKE) DESTDIR=$(PWD) install
-
-hermes: $(CLI_SOURCES) bin/buildapp
-	@bin/buildapp \
+hermes: $(CLI_SOURCES) $(QL_LOCAL)/setup.lisp
+	@buildapp \
 		--asdf-tree $(QL_LOCAL)/local-projects \
 		--asdf-tree $(QL_LOCAL)/dists \
 		--asdf-path cli/ \
@@ -44,8 +31,8 @@ hermes: $(CLI_SOURCES) bin/buildapp
 		--output hermes --entry hermes:main
 
 $(QL_LOCAL)/setup.lisp:
-	@curl -O $(QUICKLISP_SCRIPT)
-	@sbcl $(LOCAL_OPTS) \
+	@wget http://beta.quicklisp.org/quicklisp.lisp
+	@sbcl --noinform --noprint --disable-debugger --no-sysinit --no-userinit \
 		--load quicklisp.lisp \
 		--eval '(quicklisp-quickstart:install :path "$(QL_LOCAL)")' \
 		--eval '(quit)'
