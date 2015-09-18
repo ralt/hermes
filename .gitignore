@@ -2,3 +2,6 @@ scripts/test.bin
 *.o
 *.so
 hermes-service
+core
+hermes
+quicklisp-manifest.txt
