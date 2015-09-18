@@ -1,5 +1,0 @@
-*.so /lib/security/
-debian/pam-configs/hermes /usr/share/pam-configs/
-debian/services/hermes.service /etc/systemd/system/
-hermes-service /usr/share/hermes/
-hermes /usr/bin/

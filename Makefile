@@ -15,7 +15,7 @@ pam_hermes.o: pam_hermes.c
 hermes-service: hermes-service.c
 	$(CC) $(FLAGS) -o $@ $^
 
-.PHONY: clean
+.PHONY: clean install
 
 clean:
 	rm -rf *.o *.so hermes-service hermes .quicklocal/ quicklisp.lisp
@@ -36,3 +36,10 @@ $(QL_LOCAL)/setup.lisp:
 		--load quicklisp.lisp \
 		--eval '(quicklisp-quickstart:install :path "$(QL_LOCAL)")' \
 		--eval '(quit)'
+
+install:
+	install -c -m 644 debian/services/hermes.service $(DESTDIR)/etc/systemd/system
+	install -c -m 755 hermes $(DESTDIR)/usr/bin
+	install -c -m 755 hermes-service $(DESTDIR)/usr/share/hermes
+	install -c -m 644 pam_hermes.so $(DESTDIR)/lib/security
+	install -c -m 644 debian/pam-configs/hermes $(DESTDIR)/usr/share/pam-configs
