@@ -1,38 +1,33 @@
 #!/usr/bin/sbcl --script
 
-(load "/home/florian/.sbclrc")
+(load (merge-pathnames #p".sbclrc" (user-homedir-pathname)))
 
 (ql:quickload :alexandria)
 (ql:quickload :cl-ppcre)
-(ql:quickload :ironclad)
 
 (defpackage #:hermes
   (:use :cl))
 
 (in-package #:hermes)
 
-(defvar *token-length* 128)
-
-(setf ironclad:*prng* (ironclad:make-prng :fortuna))
-
 (defun write-bytes (bytes stream)
-  (dolist (byte bytes)
-    (write-byte byte stream)))
+  (loop for byte across bytes
+     do (write-byte byte stream)))
 
-(defun string-to-bytes (string)
-  (loop for char across string collect (char-code char)))
+(defvar *token-length* 128)
+(defvar *token* (make-array *token-length* :element-type '(unsigned-byte 8)))
 
-(defun vector-to-list (vec)
-  (loop for el across vec collect el))
-
-(defvar *token* (vector-to-list (ironclad:random-data *token-length*)))
+(with-open-file (f #p"/dev/urandom"
+                   :direction :input
+                   :element-type '(unsigned-byte 8))
+  (read-sequence *token* f :start 0 :end *token-length*))
 
 (with-open-file (f #p"/dev/sdb"
                    :direction :output
                    :element-type '(unsigned-byte 8)
                    :if-exists :overwrite
                    :if-does-not-exist :create)
-  (write-bytes (string-to-bytes "Robin") f)
+  (write-bytes #(82 111 98 105 110) f)
   (write-bytes *token* f))
 
 (with-open-file (f (merge-pathnames #p".hermes" (user-homedir-pathname))
