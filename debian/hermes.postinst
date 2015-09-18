@@ -3,3 +3,8 @@
 set -e
 
 pam-auth-update --package
+
+addgroup --system hermes
+
+systemctl enable hermes
+systemctl start hermes
