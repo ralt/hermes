@@ -42,8 +42,8 @@ static int globerr(const char*, int);
 static bool is_block_device(const char*);
 static bool has_hermes_fingerprint(const char*);
 static bool is_hermes_device(const char*);
-static size_t handle_command(uint32_t command, uint8_t **buffer);
-static size_t read_hermes_device(char *path, uint8_t **buffer);
+static size_t handle_command(uint32_t, uint8_t**);
+static size_t read_hermes_device(char*, uint8_t**);
 
 int main(int argc, char *argv[])
 {

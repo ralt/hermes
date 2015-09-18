@@ -2,6 +2,8 @@
 
 Authenticate on linux by plugging your USB stick!
 
+Demo: https://www.youtube.com/watch?v=W7L9FrIDYgU
+
 ## howto
 
 **/!\ WARNING /!\** The next step will delete **ALL PARTITIONS AND DATA** of the usb key.

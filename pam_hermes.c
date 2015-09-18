@@ -24,7 +24,7 @@
 
 static bool can_login(const uint8_t*, const char*);
 static bool is_authenticated(const char*);
-
+static bool timing_safe_compare(const char*, const size_t, const char*, const size_t);
 
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
@@ -52,8 +52,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 	return is_authenticated(user) ? PAM_SUCCESS : PAM_AUTH_ERR;
 }
 
-/* Taken from http://security.stackexchange.com/questions/49849/timing-safe-string-comparison-avoiding-length-leak */
-bool timing_safe_compare(const char *known,
+static bool timing_safe_compare(const char *known,
 			 const size_t known_len,
 			 const char *unknown,
 			 const size_t unknown_len) {
