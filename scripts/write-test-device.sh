@@ -22,7 +22,18 @@
                    :element-type '(unsigned-byte 8))
   (read-sequence *token* f :start 0 :end *token-length*))
 
-(with-open-file (f #p"/dev/sdb"
+;;; /dev/sdb is my usb stick with 2 partitions:
+;;;   - /dev/sdb1: the hermes device
+;;;   - /dev/sdb2: a fat32 partition
+;;; I made this with:
+;;; # dd if=/dev/zero of=/dev/sdb bs=4k
+;;; # sync
+;;; # fdisk /dev/sdb
+;;; [create empty DOS partition table with "o"]
+;;; [create new 2048 bytes partition with "n" (and change the end to be 4096)]
+;;; [create new partition with "n" (and attribute rest of blocks)]
+;;; [sync changes with "w"]
+(with-open-file (f #p"/dev/sdb1"
                    :direction :output
                    :element-type '(unsigned-byte 8)
                    :if-exists :overwrite
