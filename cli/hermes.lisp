@@ -1,7 +1,13 @@
 (in-package #:hermes)
 
 (defun main (args)
-  (if (command-exists *root-commands* (rest args))
-      (handle-command *root-commands* (rest args))
-      (handle-command *root-commands* '("help")))
-  0)
+  (handler-case
+      (if (command-exists *root-commands* (rest args))
+          (handle-command *root-commands* (rest args))
+          (handle-command *root-commands* '("help")))
+    (argument-error (err) (progn
+                            (format t "~A~%" (slot-value err 'text))
+                            -2))
+    (error () (progn
+                (format t "fatal error~%")
+                -1))))

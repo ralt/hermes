@@ -22,9 +22,9 @@ hermes online help: <https://github.com/ralt/hermes/issues>
 
 (defcommand *help-commands* write (args)
   (declare (ignore args))
-  (format t "usage: hermes write <device>
+  (format t "usage: hermes write <device> <user>
 
-Transform a device in an hermes device.
+Transform a device in an hermes device for a user.
 
 /!\\ WARNING /!\\
 

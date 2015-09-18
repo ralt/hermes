@@ -4,6 +4,7 @@
   :license "MIT License"
   :serial t
   :components ((:file "package")
+               (:file "error")
                (:file "command")
                (:file "help")
                (:file "write")
