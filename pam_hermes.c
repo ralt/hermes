@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <pwd.h>
 
-#define COMMAND_GET_KEYS 1
+#define COMMAND_GET_TOKEN 1
 
 #define RET_NO_HERMES_DEVICE 0
 #define RET_HERMES_DEVICE_FOUND 1
@@ -133,7 +133,7 @@ static bool is_authenticated(const char *user)
 	const char *socket_path = "/var/run/hermes.sock";
 	struct sockaddr_un addr;
 	int fd, rc;
-	uint32_t command = COMMAND_GET_KEYS;
+	uint32_t command = COMMAND_GET_TOKEN;
 	uint32_t data_length = 0;
 	bool retval;
 	uint8_t *buffer;
