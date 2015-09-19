@@ -64,11 +64,7 @@ $ cd hermes/
 $ make
 
 # Install the built files
-$ sudo install -m 755 hermes /usr/bin
-$ sudo mkdir -p /usr/share/hermes
-$ sudo install -m 755 hermes-service /usr/share/hermes
-$ sudo install -m 644 pam_hermes.so /lib/security
-$ sudo install -m 644 debian/pam-configs/hermes /usr/share/pam-configs
+$ sudo make install
 
 # Configure your system
 $ sudo pam-auth-update # Select "Hermes"
@@ -81,7 +77,6 @@ $ sudo usermod -a -G hermes <user>
 If you're using systemd, you can then run the following:
 
 ```
-$ sudo cp debian/services/hermes.service /etc/systemd/system
 $ sudo systemctl enable hermes
 $ sudo systemctl start hermes
 ```

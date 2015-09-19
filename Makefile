@@ -38,6 +38,7 @@ $(QL_LOCAL)/setup.lisp:
 		--eval '(quit)'
 
 install:
+	mkdir -p $(DESTDIR)/usr/share/hermes
 	install -c -m 644 debian/services/hermes.service $(DESTDIR)/etc/systemd/system
 	install -c -m 755 hermes $(DESTDIR)/usr/bin
 	install -c -m 755 hermes-service $(DESTDIR)/usr/share/hermes
