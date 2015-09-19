@@ -85,7 +85,14 @@ If you're not using systemd, please look at the
 `debian/services/hermes.service` file and reproduce the equivalent for
 your init system.
 
-From then on, you can follow the steps in [Preparing the usb stick][1].
+From then on, you can follow the steps in
+[Preparing the usb stick][1].
+
+## How does it work?
+
+A string of 128 characters is put on the both usb stick and in the
+user's home directory. When connection time comes, the tokens are
+checked to see if they match. If they do, the user can be connected.
 
 ## Developer todo
 
