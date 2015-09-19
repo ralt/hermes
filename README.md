@@ -85,7 +85,7 @@ If you're not using systemd, please look at the
 `debian/services/hermes.service` file and reproduce the equivalent for
 your init system.
 
-From then on, you can follow the steps in "Preparing the usb stick".
+From then on, you can follow the steps in [Preparing the usb stick][1].
 
 ## Developer todo
 
@@ -110,3 +110,4 @@ $HOME/.hermes.
 
 
   [0]: https://github.com/ralt/hermes/releases/download/1.0/hermes_1.0_amd64.deb
+  [1]: https://github.com/ralt/hermes#preparing-the-usb-stick
