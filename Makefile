@@ -1,5 +1,5 @@
 CC ?= gcc
-FLAGS = -Wall -Werror -std=c11 -pedantic
+FLAGS = -Wall -Werror -std=c11 -pedantic -O3
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 CLI_SOURCES := $(wildcard cli/*.lisp) $(wildcard cli/*.asd)
 QL_LOCAL=$(PWD)/.quicklocal/quicklisp
