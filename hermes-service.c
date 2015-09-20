@@ -5,6 +5,8 @@
   the UNIX socket.
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -19,6 +21,8 @@
 #include <errno.h>
 #include <glob.h>
 #include <arpa/inet.h>
+#include <syscall.h>
+#include <linux/random.h>
 
 #define FINGERPRINT_LENGTH 5
 #define TOKEN_LENGTH 128
@@ -106,7 +110,7 @@ int main(int argc, char *argv[])
 
 			if (result)
 			{
-				result = regenerate_tokens(user);
+				result = regenerate_token(user);
 			}
 
 			if (write(cl, &result, sizeof(bool)) != 1)
@@ -209,6 +213,12 @@ clean_exit:
 
 static bool get_random_token(uint8_t token[TOKEN_LENGTH])
 {
+	if (syscall(SYS_getrandom, token, TOKEN_LENGTH, GRND_NONBLOCK) !=
+	    TOKEN_LENGTH)
+	{
+		perror("getrandom");
+		return false;
+	}
 	return true;
 }
 
