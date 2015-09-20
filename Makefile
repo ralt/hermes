@@ -39,6 +39,8 @@ $(QL_LOCAL)/setup.lisp:
 
 install:
 	mkdir -p $(DESTDIR)/usr/share/hermes
+	mkdir -p $(DESTDIR)/etc/hermes
+	chmod 500 $(DESTDIR)/etc/hermes
 	install -c -m 644 debian/services/hermes.service $(DESTDIR)/etc/systemd/system
 	install -c -m 755 hermes $(DESTDIR)/usr/bin
 	install -c -m 755 hermes-service $(DESTDIR)/usr/share/hermes
