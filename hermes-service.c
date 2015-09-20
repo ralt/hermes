@@ -30,27 +30,29 @@
 #include <arpa/inet.h>
 
 #define FINGERPRINT_LENGTH 5
-
-#define COMMAND_GET_KEYS 1
-
-#define RET_NO_HERMES_DEVICE 0
-#define RET_HERMES_DEVICE_FOUND 1
-
 #define TOKEN_LENGTH 128
+#define MAX_USERNAME_LENGTH 33
 
 static int globerr(const char*, int);
 static bool is_block_device(const char*);
 static bool has_hermes_fingerprint(const char*);
 static bool is_hermes_device(const char*);
-static size_t handle_command(uint32_t, uint8_t**);
-static size_t read_hermes_device(char*, uint8_t**);
+static bool can_login(char[MAX_USERNAME_LENGTH]);
+static bool find_hermes_device(char**);
+static bool read_device_token(char*, uint8_t[TOKEN_LENGTH]);
+static bool read_user_token(char user[MAX_USERNAME_LENGTH],
+			    uint8_t token[TOKEN_LENGTH]);
+static bool timing_safe_compare(uint8_t[TOKEN_LENGTH], uint8_t[TOKEN_LENGTH]);
 
 int main(int argc, char *argv[])
 {
 	const char *socket_path = "/var/run/hermes.sock";
 	struct sockaddr_un addr;
-	uint32_t command;
-	int fd, rc, cl;
+
+	/* usernames are max 32 chars + 1 for null char */
+	char user[MAX_USERNAME_LENGTH];
+
+	int fd, cl, rc;
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		perror("socket");
@@ -71,7 +73,7 @@ int main(int argc, char *argv[])
 
 	if (chmod(socket_path, S_IRGRP | S_IWGRP) == -1)
 	{
-		perror("chmod");
+		fprintf(stderr, "%s: can't chmod %s\n", strerror(errno), socket_path);
 		exit(EXIT_FAILURE);
 	}
 
@@ -84,7 +86,8 @@ int main(int argc, char *argv[])
 
 	if (chown(socket_path, 0, hermes_group->gr_gid) == -1)
 	{
-		perror("chown");
+		fprintf(stderr, "%s: can't chown %s to hermes group\n",
+			strerror(errno), socket_path);
 		exit(EXIT_FAILURE);
 	}
 
@@ -102,26 +105,15 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		while ((rc = read(cl, &command, sizeof(command))) > 0)
+		while ((rc = read(cl, &user, MAX_USERNAME_LENGTH)) > 0)
 		{
-			uint8_t *buffer;
-			size_t buffer_length = handle_command(command, &buffer);
-			uint32_t data_length = htonl(buffer_length);
+			bool result = can_login(user);
 
-			if (write(cl, &data_length, sizeof(data_length)) !=
-			    sizeof(data_length))
+			if (write(cl, &result, sizeof(bool)) != 1)
 			{
-				perror("write data_length");
+				perror("write result");
 				exit(EXIT_FAILURE);
 			}
-
-			if (write(cl, buffer, buffer_length) != buffer_length)
-			{
-				perror("write buffer");
-				exit(EXIT_FAILURE);
-			}
-
-			free(buffer);
 		}
 
 		if (rc == -1)
@@ -144,16 +136,48 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 
-static size_t handle_command(uint32_t command, uint8_t **buffer)
+static bool can_login(char user[MAX_USERNAME_LENGTH])
+{
+	bool retval = false;
+
+	char *hermes_device;
+	bool device_found = find_hermes_device(&hermes_device);
+	if (!device_found)
+	{
+		return false;
+	}
+
+	uint8_t device_token[TOKEN_LENGTH];
+	if (!read_device_token(hermes_device, device_token))
+	{
+		goto error_exit;
+	}
+
+	uint8_t user_token[TOKEN_LENGTH];
+	if (!read_user_token(user, user_token))
+	{
+		goto error_exit;
+	}
+
+	retval = timing_safe_compare(device_token, user_token);
+
+	goto clean_exit;
+
+error_exit:
+	retval = false;
+
+clean_exit:
+	free(hermes_device);
+
+	return retval;
+}
+
+static bool find_hermes_device(char **hermes_device)
 {
 	glob_t files;
-	int retval;
-	size_t ret;
 	bool device_found = false;
-	char *hermes_device;
 
-	retval = glob("/dev/*", GLOB_ERR | GLOB_NOSORT, globerr, &files);
-	if (retval != 0)
+	if (glob("/dev/sd*", GLOB_ERR | GLOB_NOSORT, globerr, &files) != 0)
 	{
 		return false;
 	}
@@ -162,55 +186,33 @@ static size_t handle_command(uint32_t command, uint8_t **buffer)
 	{
 		if (is_hermes_device(files.gl_pathv[i]))
 		{
-			device_found = true;
-			hermes_device = malloc(strlen(files.gl_pathv[i]) *
+			*hermes_device = malloc(strlen(files.gl_pathv[i]) *
 					       sizeof(uint8_t));
-			if (hermes_device == NULL)
+			if (*hermes_device == NULL)
 			{
 				perror("malloc hermes_device");
 				exit(EXIT_FAILURE);
 			}
 
-			memcpy(hermes_device,
+			memcpy(*hermes_device,
 			       files.gl_pathv[i],
 			       strlen(files.gl_pathv[i]) + 1);
+
+			device_found = true;
+			break;
 		}
-	}
-
-	*buffer = malloc(sizeof(uint8_t));
-	if (*buffer == NULL)
-	{
-		perror("malloc buffer");
-		exit(EXIT_FAILURE);
-	}
-
-	if (!device_found)
-	{
-		*buffer[0] = RET_NO_HERMES_DEVICE;
-		ret = 1;
-	}
-
-	if (device_found)
-	{
-		*buffer[0] = RET_HERMES_DEVICE_FOUND;
-		ret = read_hermes_device(hermes_device, buffer);
-		free(hermes_device);
 	}
 
 	globfree(&files);
 
-	return ret;
+	return device_found;
 }
 
-static size_t read_hermes_device(char *path, uint8_t **buffer)
+static bool read_device_token(char *path, uint8_t token[TOKEN_LENGTH])
 {
-	size_t offset = 1;
 	FILE *fd;
 	size_t bytes_read;
-
-	uint8_t token[TOKEN_LENGTH];
-
-	uint32_t ret = 0;
+	bool retval = false;
 
 	fd = fopen(path, "rb");
 	if (fd == NULL)
@@ -236,28 +238,53 @@ static size_t read_hermes_device(char *path, uint8_t **buffer)
 		goto safe_close;
 	}
 
-	/* Now copy all the data to the buffer */
-	ret = TOKEN_LENGTH;
-
-	/* Let's not forget that there is 1 already-malloced byte for the command. */
-	*buffer = realloc(*buffer, sizeof(uint8_t) * (offset + ret));
-	if (*buffer == NULL)
-	{
-		fprintf(stderr, "%s: can't malloc buffer\n", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-
-	/* token */
-	memcpy(*buffer + offset, token, TOKEN_LENGTH);
+	retval = true;
 
  safe_close:
 	if (fclose(fd) != 0)
 	{
 		fprintf(stderr, "%s: can't close %s\n", strerror(errno), path);
+	}
+
+	return retval;
+}
+
+static bool read_user_token(char user[MAX_USERNAME_LENGTH],
+			    uint8_t token[TOKEN_LENGTH])
+{
+	const char *prefix = "/etc/hermes/";
+	char user_token_path[strlen(prefix) + MAX_USERNAME_LENGTH];
+
+	memcpy(user_token_path, prefix, strlen(prefix));
+	memcpy(user_token_path + strlen(prefix), user, MAX_USERNAME_LENGTH);
+
+	FILE *fd;
+	size_t bytes_read;
+	bool retval = false;
+
+	fd = fopen(user_token_path, "rb");
+	if (fd == NULL)
+	{
+		perror("open user_token_path");
 		return false;
 	}
 
-	return ret + sizeof(uint8_t);
+	bytes_read = fread(token, sizeof(uint8_t), TOKEN_LENGTH, fd);
+	if (bytes_read != TOKEN_LENGTH)
+	{
+		perror("read token");
+		goto safe_close;
+	}
+
+	retval = true;
+
+ safe_close:
+	if (fclose(fd) != 0)
+	{
+		perror("close user_token_path");
+	}
+
+	return retval;
 }
 
 static int globerr(const char *path, int eerrno)
@@ -337,4 +364,16 @@ static bool is_hermes_device(const char *path)
 	}
 
 	return true;
+}
+
+static bool timing_safe_compare(uint8_t device_token[TOKEN_LENGTH],
+				uint8_t user_token[TOKEN_LENGTH])
+{
+	int result = 0;
+
+	for (size_t i = 0; i < TOKEN_LENGTH; i++) {
+		result |= device_token[i % TOKEN_LENGTH] ^ user_token[i];
+	}
+
+	return result == 0;
 }

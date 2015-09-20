@@ -68,7 +68,7 @@ $ sudo make install
 
 # Configure your system
 $ sudo pam-auth-update # Select "Hermes"
-$ sudo addgroup --system hermes
+$ sudo addgroup hermes
 
 # Configure your user
 $ sudo usermod -a -G hermes <user>
@@ -103,17 +103,16 @@ checked to see if they match. If they do, the user can be connected.
 ## Technical process
 
 The `hermes write <device> <user>` command will generate a 128-bytes
-token, and write it to both `/home/$USER/.hermes` and the device. On
+token, and write it to both `/etc/hermes/<user>` and the device. On
 the device, it will first write 5 bytes to recognize an hermes device.
 
-When login is needed, the PAM module will send one byte of value "1"
-to the /var/run/hermes.sock UNIX socket. The hermes-service daemon
-will understand that this means "get me the token from the hermes
-device". It will look in /dev/* for a hermes device (starts with bytes
-82, 111, 98, 105, 110). If none exists, it sends "0" to the UNIX
-socket. If one exists, it sends "1", followed by the 128-bytes
-token. The PAM module can then compare it with the token in
-$HOME/.hermes.
+When login is needed, the PAM module will send the user to the
+/var/run/hermes.sock UNIX socket. The hermes-service daemon will then
+look in /dev/sd* for a hermes device (starts with bytes 82, 111, 98,
+105, 110). If none exists, it sends "false" to the UNIX socket. If one
+exists, it compares with the token in `/etc/hermes/<user>`, and sends
+either "true" or "false" back to the UNIX socket. The PAM module just
+has to get the boolean result back and it can return it.
 
 
   [0]: https://github.com/ralt/hermes/releases/download/1.0/hermes_1.0_amd64.deb

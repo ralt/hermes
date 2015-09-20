@@ -30,7 +30,7 @@
                              :if-does-not-exist :create)
             (write-bytes #(82 111 98 105 110) f)
             (write-bytes token f))
-          (with-open-file (f (merge-pathnames #p".hermes" (format nil "/home/~A/" user))
+          (with-open-file (f (merge-pathnames user #p"/etc/hermes/")
                              :direction :output
                              :element-type '(unsigned-byte 8)
                              :if-exists :overwrite
