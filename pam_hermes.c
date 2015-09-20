@@ -66,7 +66,7 @@ static bool is_authenticated(const char *user)
 		return false;
 	}
 
-	write(fd, &user, strlen(user));
+	write(fd, user, strlen(user));
 
 	if (read(fd, &result, sizeof(bool)) != sizeof(bool))
 	{
