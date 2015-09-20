@@ -1,3 +1,9 @@
+hermes (1.1) stable; urgency=medium
+
+  * Moves to global tokens, allowing pre-decryption tokens.
+
+ -- Florian Margaine <florian@margaine.com>  Sun, 20 Sep 2015 20:21:55 +0200
+
 hermes (1.0) stable; urgency=low
 
   * Initial release
