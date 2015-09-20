@@ -222,14 +222,90 @@ static bool get_random_token(uint8_t token[TOKEN_LENGTH])
 	return true;
 }
 
-static bool write_device_token(char *hermes_device, uint8_t token[TOKEN_LENGTH])
+static bool write_device_token(char *path, uint8_t token[TOKEN_LENGTH])
 {
-	return true;
+	bool retval = false;
+
+	FILE *fd;
+	size_t written_bytes;
+
+	fd = fopen(path, "wb");
+	if (fd == NULL)
+	{
+		fprintf(stderr, "%s: can't write to %s\n", strerror(errno), path);
+		return false;
+	}
+
+	if ((fseek(fd, FINGERPRINT_LENGTH, 0)) != 0)
+	{
+		fprintf(stderr, "%s: can't fseek into %s\n", strerror(errno), path);
+		goto clean_exit;
+	}
+
+	written_bytes = fwrite(token,
+			       sizeof(uint8_t),
+			       TOKEN_LENGTH,
+			       fd);
+	if (written_bytes != TOKEN_LENGTH)
+	{
+		fprintf(stderr, "%s: couldn't write to %s\n", strerror(errno), path);
+		goto clean_exit;
+	}
+
+	retval = true;
+
+clean_exit:
+	if (fclose(fd) != 0)
+	{
+		fprintf(stderr, "%s: couldn't close %s\n", strerror(errno), path);
+		retval = false;
+	}
+
+	return retval;
 }
 
 static bool write_user_token(char *user, uint8_t token[TOKEN_LENGTH])
 {
-	return true;
+	const char *prefix = "/etc/hermes/";
+	char user_token_path[strlen(prefix) + MAX_USERNAME_LENGTH];
+
+	memcpy(user_token_path, prefix, strlen(prefix));
+	memcpy(user_token_path + strlen(prefix), user, MAX_USERNAME_LENGTH);
+
+	bool retval = false;
+	FILE *fd;
+	size_t written_bytes;
+
+	fd = fopen(user_token_path, "wb");
+	if (fd == NULL)
+	{
+		fprintf(stderr, "%s: can't write to %s\n", strerror(errno),
+			user_token_path);
+		return false;
+	}
+
+	written_bytes = fwrite(token,
+			       sizeof(uint8_t),
+			       TOKEN_LENGTH,
+			       fd);
+	if (written_bytes != TOKEN_LENGTH)
+	{
+		fprintf(stderr, "%s: couldn't write to %s\n", strerror(errno),
+			user_token_path);
+		goto clean_exit;
+	}
+
+	retval = true;
+
+clean_exit:
+	if (fclose(fd) != 0)
+	{
+		fprintf(stderr, "%s: couldn't close %s\n", strerror(errno),
+			user_token_path);
+		retval = false;
+	}
+
+	return retval;
 }
 
 static bool find_hermes_device(char **hermes_device)
