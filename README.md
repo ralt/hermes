@@ -13,7 +13,7 @@ Demo: https://www.youtube.com/watch?v=W7L9FrIDYgU
 Download the [debian package][0] and install it:
 
 ```
-$ sudo dpkg -i hermes_1.0_amd64.deb
+$ sudo dpkg -i hermes_1.1_amd64.deb
 $ sudo apt-get -f install
 ```
 
@@ -115,5 +115,5 @@ either "true" or "false" back to the UNIX socket. The PAM module just
 has to get the boolean result back and it can return it.
 
 
-  [0]: https://github.com/ralt/hermes/releases/download/1.0/hermes_1.0_amd64.deb
+  [0]: https://github.com/ralt/hermes/releases/download/1.1/hermes_1.1_amd64.deb
   [1]: https://github.com/ralt/hermes#preparing-the-usb-stick
