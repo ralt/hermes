@@ -5,6 +5,8 @@
   the UNIX socket.
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -19,6 +21,8 @@
 #include <errno.h>
 #include <glob.h>
 #include <arpa/inet.h>
+#include <syscall.h>
+#include <linux/random.h>
 
 #define FINGERPRINT_LENGTH 5
 #define TOKEN_LENGTH 128
@@ -29,11 +33,15 @@ static bool is_block_device(const char*);
 static bool has_hermes_fingerprint(const char*);
 static bool is_hermes_device(const char*);
 static bool can_login(char[MAX_USERNAME_LENGTH]);
+static bool regenerate_token(char user[MAX_USERNAME_LENGTH]);
 static bool find_hermes_device(char**);
 static bool read_device_token(char*, uint8_t[TOKEN_LENGTH]);
 static bool read_user_token(char user[MAX_USERNAME_LENGTH],
 			    uint8_t token[TOKEN_LENGTH]);
 static bool timing_safe_compare(uint8_t[TOKEN_LENGTH], uint8_t[TOKEN_LENGTH]);
+static bool get_random_token(uint8_t token[TOKEN_LENGTH]);
+static bool write_device_token(char *hermes_device, uint8_t token[TOKEN_LENGTH]);
+static bool write_user_token(char *user, uint8_t token[TOKEN_LENGTH]);
 
 int main(int argc, char *argv[])
 {
@@ -100,6 +108,11 @@ int main(int argc, char *argv[])
 		{
 			bool result = can_login(user);
 
+			if (result)
+			{
+				result = regenerate_token(user);
+			}
+
 			if (write(cl, &result, sizeof(bool)) != 1)
 			{
 				perror("write result");
@@ -141,24 +154,156 @@ static bool can_login(char user[MAX_USERNAME_LENGTH])
 	uint8_t device_token[TOKEN_LENGTH];
 	if (!read_device_token(hermes_device, device_token))
 	{
-		goto error_exit;
+		goto clean_exit;
 	}
 
 	uint8_t user_token[TOKEN_LENGTH];
 	if (!read_user_token(user, user_token))
 	{
-		goto error_exit;
+		goto clean_exit;
 	}
 
 	retval = timing_safe_compare(device_token, user_token);
 
-	goto clean_exit;
+clean_exit:
+	free(hermes_device);
 
-error_exit:
-	retval = false;
+	return retval;
+}
+
+static bool regenerate_token(char user[MAX_USERNAME_LENGTH])
+{
+	bool retval = false;
+
+	uint8_t new_token[TOKEN_LENGTH];
+	if (!get_random_token(new_token))
+	{
+		return false;
+	}
+
+	char *hermes_device;
+	bool device_found = find_hermes_device(&hermes_device);
+	if (!device_found)
+	{
+		return false;
+	}
+
+	if (!write_device_token(hermes_device, new_token))
+	{
+		goto clean_exit;
+	}
+
+	if (!write_user_token(user, new_token))
+	{
+		/* @TODO
+		   There should be a way to recover here.
+		   Because at this point, the new token is written on
+		   the device, but not in the user's file. A very
+		   inconsistent state. */
+		goto clean_exit;
+	}
+
+	retval = true;
 
 clean_exit:
 	free(hermes_device);
+
+	return retval;
+}
+
+static bool get_random_token(uint8_t token[TOKEN_LENGTH])
+{
+	if (syscall(SYS_getrandom, token, TOKEN_LENGTH, GRND_NONBLOCK) !=
+	    TOKEN_LENGTH)
+	{
+		perror("getrandom");
+		return false;
+	}
+	return true;
+}
+
+static bool write_device_token(char *path, uint8_t token[TOKEN_LENGTH])
+{
+	bool retval = false;
+
+	FILE *fd;
+	size_t written_bytes;
+
+	fd = fopen(path, "wb");
+	if (fd == NULL)
+	{
+		fprintf(stderr, "%s: can't write to %s\n", strerror(errno), path);
+		return false;
+	}
+
+	if ((fseek(fd, FINGERPRINT_LENGTH, 0)) != 0)
+	{
+		fprintf(stderr, "%s: can't fseek into %s\n", strerror(errno), path);
+		goto clean_exit;
+	}
+
+	written_bytes = fwrite(token,
+			       sizeof(uint8_t),
+			       TOKEN_LENGTH,
+			       fd);
+	if (written_bytes != TOKEN_LENGTH)
+	{
+		fprintf(stderr, "%s: couldn't write to %s\n", strerror(errno), path);
+		goto clean_exit;
+	}
+
+	retval = true;
+
+clean_exit:
+	if (fclose(fd) != 0)
+	{
+		fprintf(stderr, "%s: couldn't close %s\n", strerror(errno), path);
+		retval = false;
+	}
+
+	return retval;
+}
+
+static bool write_user_token(char *user, uint8_t token[TOKEN_LENGTH])
+{
+	const char *prefix = "/etc/hermes/";
+	char user_token_path[strlen(prefix) + MAX_USERNAME_LENGTH];
+
+	memcpy(user_token_path, prefix, strlen(prefix));
+	memcpy(user_token_path + strlen(prefix), user, MAX_USERNAME_LENGTH);
+
+	bool retval = false;
+	FILE *fd;
+	size_t written_bytes;
+
+	fd = fopen(user_token_path, "wb");
+	if (fd == NULL)
+	{
+		fprintf(stderr, "%s: can't write to %s\n", strerror(errno),
+			user_token_path);
+		return false;
+	}
+
+	written_bytes = fwrite(token,
+			       sizeof(uint8_t),
+			       TOKEN_LENGTH,
+			       fd);
+	if (written_bytes != TOKEN_LENGTH)
+	{
+		fprintf(stderr, "%s: couldn't write to %s\n", strerror(errno),
+			user_token_path);
+		goto clean_exit;
+	}
+
+	retval = true;
+
+clean_exit:
+	if (fclose(fd) != 0)
+	{
+		fprintf(stderr, "%s: couldn't close %s\n", strerror(errno),
+			user_token_path);
+		retval = false;
+	}
 
 	return retval;
 }
