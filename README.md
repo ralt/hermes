@@ -94,11 +94,13 @@ A string of 128 characters is put on the both usb stick and in the
 user's home directory. When connection time comes, the tokens are
 checked to see if they match. If they do, the user can be connected.
 
+Every time there is a successful login, the token is regenerated, for
+security reasons.
+
 ## Developer todo
 
 - better error handling. Right now it's fprintf(stderr) or perror()
   everywhere, randomly. Make it consistent.
-- regenerate the token at every login: see if it's interesting.
 
 ## Technical process
 
