@@ -1,17 +1,8 @@
 /*
   The service, run as root, will listen on the /var/run/hermes.sock
-  socket. The only command it will understand is a four-bytes long
-  command, being a number mapping an action.
-
-  Really, only one action is needed: get me the content of the
-  connected hermes device. Having 4 bytes is cheap enough, and leaves
-  other possibilities later on, if needed.
-
-  The "get me the content" command needs the value "1". It can return
-  one of these 2 results:
-    - first byte 0, means "there is no hermes device"
-    - first byte 1, means "there is an hermes device". It is followed
-      by the 128-bytes token.
+  socket. It is waiting for a user char* to come in, after which it
+  will check if the user can login. It then sends a boolean back into
+  the UNIX socket.
  */
 
 #include <stdio.h>
