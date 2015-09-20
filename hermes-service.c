@@ -29,11 +29,15 @@ static bool is_block_device(const char*);
 static bool has_hermes_fingerprint(const char*);
 static bool is_hermes_device(const char*);
 static bool can_login(char[MAX_USERNAME_LENGTH]);
+static bool regenerate_token(char user[MAX_USERNAME_LENGTH]);
 static bool find_hermes_device(char**);
 static bool read_device_token(char*, uint8_t[TOKEN_LENGTH]);
 static bool read_user_token(char user[MAX_USERNAME_LENGTH],
 			    uint8_t token[TOKEN_LENGTH]);
 static bool timing_safe_compare(uint8_t[TOKEN_LENGTH], uint8_t[TOKEN_LENGTH]);
+static bool get_random_token(uint8_t token[TOKEN_LENGTH]);
+static bool write_device_token(char *hermes_device, uint8_t token[TOKEN_LENGTH]);
+static bool write_user_token(char *user, uint8_t token[TOKEN_LENGTH]);
 
 int main(int argc, char *argv[])
 {
@@ -100,6 +104,11 @@ int main(int argc, char *argv[])
 		{
 			bool result = can_login(user);
 
+			if (result)
+			{
+				result = regenerate_tokens(user);
+			}
+
 			if (write(cl, &result, sizeof(bool)) != 1)
 			{
 				perror("write result");
@@ -141,26 +150,76 @@ static bool can_login(char user[MAX_USERNAME_LENGTH])
 	uint8_t device_token[TOKEN_LENGTH];
 	if (!read_device_token(hermes_device, device_token))
 	{
-		goto error_exit;
+		goto clean_exit;
 	}
 
 	uint8_t user_token[TOKEN_LENGTH];
 	if (!read_user_token(user, user_token))
 	{
-		goto error_exit;
+		goto clean_exit;
 	}
 
 	retval = timing_safe_compare(device_token, user_token);
-
-	goto clean_exit;
-
-error_exit:
-	retval = false;
 
 clean_exit:
 	free(hermes_device);
 
 	return retval;
+}
+
+static bool regenerate_token(char user[MAX_USERNAME_LENGTH])
+{
+	bool retval = false;
+
+	uint8_t new_token[TOKEN_LENGTH];
+	if (!get_random_token(new_token))
+	{
+		return false;
+	}
+
+	char *hermes_device;
+	bool device_found = find_hermes_device(&hermes_device);
+	if (!device_found)
+	{
+		return false;
+	}
+
+	if (!write_device_token(hermes_device, new_token))
+	{
+		goto clean_exit;
+	}
+
+	if (!write_user_token(user, new_token))
+	{
+		/* @TODO
+		   There should be a way to recover here.
+		   Because at this point, the new token is written on
+		   the device, but not in the user's file. A very
+		   inconsistent state. */
+		goto clean_exit;
+	}
+
+	retval = true;
+
+clean_exit:
+	free(hermes_device);
+
+	return retval;
+}
+
+static bool get_random_token(uint8_t token[TOKEN_LENGTH])
+{
+	return true;
+}
+
+static bool write_device_token(char *hermes_device, uint8_t token[TOKEN_LENGTH])
+{
+	return true;
+}
+
+static bool write_user_token(char *user, uint8_t token[TOKEN_LENGTH])
+{
+	return true;
 }
 
 static bool find_hermes_device(char **hermes_device)
