@@ -3,5 +3,7 @@
 set -e
 
 if [ "$1" = remove ]; then
-        pam-auth-update --package --remove hermes
+    pam-auth-update --package --remove hermes
+    systemctl stop hermes
+    systemctl disable hermes
 fi

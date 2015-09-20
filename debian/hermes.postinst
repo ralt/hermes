@@ -6,5 +6,9 @@ pam-auth-update --package
 
 addgroup hermes || true
 
+mkdir -p /etc/hermes/
+chown root:root /etc/hermes/
+chmod 500 /etc/hermes/
+
 systemctl enable hermes
 systemctl start hermes
