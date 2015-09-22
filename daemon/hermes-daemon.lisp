@@ -29,14 +29,13 @@
                                    :element-type '(unsigned-byte 8))))
       (when (> (read-sequence user-buffer socket) 0)
         (let ((user (buffer-to-string user-buffer)))
-          (handler-case
-              (write-byte (handler-case
-                              (if (and (can-login-p user)
-                                       (regenerate-token user))
-                                  1
-                                  0)
-                            (error () 0))
-                          socket)))))))
+          (write-byte (handler-case
+                          (if (and (can-login-p user)
+                                   (regenerate-token user))
+                              1
+                              0)
+                        (error () 0))
+                      socket))))))
 
 (defun buffer-to-string (buffer)
   (coerce (loop for byte across buffer
