@@ -2,7 +2,7 @@
 Description=Hermes device reader
 
 [Service]
-ExecStart=/usr/share/hermes/hermes-service
+ExecStart=/usr/share/hermes/hermes-daemon
 Type=simple
 User=root
 
