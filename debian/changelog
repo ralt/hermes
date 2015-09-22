@@ -1,3 +1,10 @@
+hermes (1.2) unstable; urgency=medium
+
+  * Adds one-time tokens.
+  * Moves to Common-Lisp based daemon
+
+ -- Florian Margaine <florian@margaine.com>  Mon, 21 Sep 2015 01:04:22 +0200
+
 hermes (1.1) stable; urgency=medium
 
   * Moves to global tokens, allowing pre-decryption tokens.
