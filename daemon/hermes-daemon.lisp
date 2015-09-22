@@ -7,30 +7,36 @@
 (defvar *token-length* 128)
 (defvar *user-tokens-path* #p"/etc/hermes/")
 
+(defmacro loop-with-unix-socket (vars &body body)
+  (let ((socket (first vars))
+        (server (gensym)))
+    `(progn
+       (when (probe-file *socket-path*)
+         (sb-posix:unlink *socket-path*))
+       (sockets:with-open-socket (,server :address-family :local
+                                         :local-filename (namestring *socket-path*)
+                                         :connect :passive)
+         (sb-posix:chown *socket-path* 0 (sb-posix:group-gid (sb-posix:getgrnam "hermes")))
+         (sb-posix:chmod *socket-path* #o660)
+         (loop do (let ((,socket (sockets:accept-connection ,server)))
+                    ,@body
+                    (close ,socket)))))))
+
 (defun main (&rest args)
   (declare (ignore args))
-  (let ((user-buffer (make-array *max-username-length*
-                                 :element-type '(unsigned-byte 8))))
-    (when (probe-file *socket-path*)
-      (sb-posix:unlink *socket-path*))
-    (sockets:with-open-socket (server :address-family :local
-                                      :local-filename (namestring *socket-path*)
-                                      :connect :passive)
-      (sb-posix:chown *socket-path* 0 (sb-posix:group-gid (sb-posix:getgrnam "hermes")))
-      (sb-posix:chmod *socket-path* #o660)
-      (loop
-         do (let ((socket (sockets:accept-connection server :wait t)))
-              (when (> (read-sequence user-buffer socket) 0)
-                (let ((user (buffer-to-string user-buffer)))
-                  (handler-case
-                      (write-byte (handler-case
-                                      (if (and (can-login-p user)
-                                               (regenerate-token user))
-                                          1
-                                          0)
-                                    (error () 0))
-                                  socket)))
-                (close socket)))))))
+  (loop-with-unix-socket (socket)
+    (let ((user-buffer (make-array *max-username-length*
+                                   :element-type '(unsigned-byte 8))))
+      (when (> (read-sequence user-buffer socket) 0)
+        (let ((user (buffer-to-string user-buffer)))
+          (handler-case
+              (write-byte (handler-case
+                              (if (and (can-login-p user)
+                                       (regenerate-token user))
+                                  1
+                                  0)
+                            (error () 0))
+                          socket)))))))
 
 (defun buffer-to-string (buffer)
   (coerce (loop for byte across buffer
