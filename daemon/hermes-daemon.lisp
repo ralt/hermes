@@ -5,6 +5,7 @@
 (defvar *fingerprint-length* 5)
 (defvar *fingerprint* #(82 111 98 105 110))
 (defvar *token-length* 128)
+(defvar *user-tokens-path* #p"/etc/hermes/")
 
 (defun main (&rest args)
   (declare (ignore args))
@@ -20,10 +21,12 @@
       (loop
          do (let ((socket (sockets:accept-connection server :wait t)))
               (when (> (read-sequence user-buffer socket) 0)
-                (write-byte (if (can-login-p (buffer-to-string user-buffer))
-                                1
-                                0)
-                            socket)
+                (let ((user (buffer-to-string user-buffer)))
+                  (write-byte (if (and (can-login-p user)
+                                       (regenerate-token user))
+                                  1
+                                  0)
+                              socket))
                 (close socket)))))))
 
 (defun buffer-to-string (buffer)
@@ -40,7 +43,7 @@
         (timing-safe-compare user-token device-token *token-length*)))))
 
 (defun read-user-token (user)
-  (read-token (merge-pathnames user #p"/etc/hermes/")))
+  (read-token (merge-pathnames user *user-tokens-path*)))
 
 (defun read-device-token (device)
   (read-token device 5))
@@ -84,3 +87,29 @@
     (let ((bytes (make-array *fingerprint-length* :element-type '(unsigned-byte 8))))
       (read-sequence bytes f)
       (every #'= bytes *fingerprint*))))
+
+(defun regenerate-token (user)
+  (let ((new-token (read-token #p"/dev/urandom"))
+        (device (find-hermes-device)))
+    (when device
+      (write-device-token device new-token)
+      ;; @TODO
+      ;; There should be a way to recover here.
+      ;; Because at this point, the new token is written
+      ;; on the device, but not in the user's file. A very
+      ;; inconsistent state.
+      (write-user-token user new-token))))
+
+(defun write-device-token (device token)
+  (write-token device token 5))
+
+(defun write-user-token (user token)
+  (write-token (merge-pathnames user *user-tokens-path*) token))
+
+(defun write-token (path token &optional (offset 0))
+  (with-open-file (f path
+                     :direction :output
+                     :if-exists :overwrite
+                     :element-type '(unsigned-byte 8))
+    (file-position f offset)
+    (write-sequence token f)))
