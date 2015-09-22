@@ -4,6 +4,7 @@
 (defvar *socket-path* #p"/var/run/hermes.sock")
 (defvar *fingerprint-length* 5)
 (defvar *fingerprint* #(82 111 98 105 110))
+(defvar *token-length* 128)
 
 (defun main (&rest args)
   (declare (ignore args))
@@ -32,12 +33,26 @@
           'string))
 
 (defun can-login-p (user)
-  (if (find-hermes-device)
-      t
-      nil))
+  (let ((device (find-hermes-device)))
+    (when device
+      (let ((user-token (read-user-token user))
+            (device-token (read-device-token device)))
+        (timing-safe-compare user-token device-token *token-length*)))))
+
+(defun read-user-token (user))
+
+(defun read-device-token (device))
+
+(defun timing-safe-compare (user-token device-token token-length)
+  (let ((result 0))
+    (loop
+       for i from 0 upto (1- token-length)
+       do (setf result (logior result (logxor (elt user-token i)
+                                              (elt device-token i)))))
+    (= result 0)))
 
 (defun find-hermes-device ()
-  (some #'is-hermes-device (remove-if-not #'is-sd-device (cl-fad:list-directory #p"/dev/"))))
+  (find-if #'is-hermes-device (remove-if-not #'is-sd-device (cl-fad:list-directory #p"/dev/"))))
 
 (defun is-sd-device (path)
   (let ((file (pathname-name path)))
