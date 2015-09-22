@@ -1,10 +1,11 @@
 scripts/test.bin
 *.o
 *.so
-hermes-service
 core
 hermes
 quicklisp-manifest.txt
 .quicklocal
 bin/
 quicklisp.lisp
+daemon-deps
+hermes-daemon

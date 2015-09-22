@@ -109,7 +109,7 @@ token, and write it to both `/etc/hermes/<user>` and the device. On
 the device, it will first write 5 bytes to recognize an hermes device.
 
 When login is needed, the PAM module will send the user to the
-/var/run/hermes.sock UNIX socket. The hermes-service daemon will then
+/var/run/hermes.sock UNIX socket. The hermes-daemon service will then
 look in /dev/sd* for a hermes device (starts with bytes 82, 111, 98,
 105, 110). If none exists, it sends "false" to the UNIX socket. If one
 exists, it compares with the token in `/etc/hermes/<user>`, and sends

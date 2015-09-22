@@ -2,10 +2,10 @@ Source: hermes
 Section: unknown
 Priority: optional
 Maintainer: Florian Margaine <florian@margaine.com>
-Build-Depends: debhelper (>= 9), sbcl, wget, buildapp, libpam0g-dev
+Build-Depends: debhelper (>= 9), sbcl, wget, buildapp, libpam0g-dev, libfixposix-dev
 Standards-Version: 3.9.6
 
 Package: hermes
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 1.0.1-6)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 1.0.1-6), libfixposix0
 Description: authenticate on linux by plugging your USB stick
