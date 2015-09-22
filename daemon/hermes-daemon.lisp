@@ -23,12 +23,13 @@
               (when (> (read-sequence user-buffer socket) 0)
                 (let ((user (buffer-to-string user-buffer)))
                   (handler-case
-                      (write-byte (if (and (can-login-p user)
-                                           (regenerate-token user))
-                                      1
-                                      0)
-                                  socket)
-                    (error () (write-byte 0 socket))))
+                      (write-byte (handler-case
+                                      (if (and (can-login-p user)
+                                               (regenerate-token user))
+                                          1
+                                          0)
+                                    (error () 0))
+                                  socket)))
                 (close socket)))))))
 
 (defun buffer-to-string (buffer)
