@@ -39,9 +39,20 @@
             (device-token (read-device-token device)))
         (timing-safe-compare user-token device-token *token-length*)))))
 
-(defun read-user-token (user))
+(defun read-user-token (user)
+  (read-token (merge-pathnames user #p"/etc/hermes/")))
 
-(defun read-device-token (device))
+(defun read-device-token (device)
+  (read-token device 5))
+
+(defun read-token (path &optional (offset 0))
+  (with-open-file (f path
+                     :direction :input
+                     :element-type '(unsigned-byte 8))
+    (file-position f offset)
+    (let ((token (make-array *token-length* :element-type '(unsigned-byte 8))))
+      (read-sequence token f)
+      token)))
 
 (defun timing-safe-compare (user-token device-token token-length)
   (let ((result 0))
