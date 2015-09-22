@@ -53,7 +53,7 @@ If you're not on debian, here are the steps to manually install
 hermes.
 
 Download the following (equivalent to your distribution) dependencies:
-gcc, sbcl, wget, buildapp, libpam0g-dev.
+gcc, sbcl, wget, buildapp, libpam0g-dev, libfixposix-dev.
 
 Then run:
 
