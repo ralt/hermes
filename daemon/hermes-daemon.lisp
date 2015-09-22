@@ -22,11 +22,13 @@
          do (let ((socket (sockets:accept-connection server :wait t)))
               (when (> (read-sequence user-buffer socket) 0)
                 (let ((user (buffer-to-string user-buffer)))
-                  (write-byte (if (and (can-login-p user)
-                                       (regenerate-token user))
-                                  1
-                                  0)
-                              socket))
+                  (handler-case
+                      (write-byte (if (and (can-login-p user)
+                                           (regenerate-token user))
+                                      1
+                                      0)
+                                  socket)
+                    (error () (write-byte 0 socket))))
                 (close socket)))))))
 
 (defun buffer-to-string (buffer)
