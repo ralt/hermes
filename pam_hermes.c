@@ -15,6 +15,8 @@
 #include <arpa/inet.h>
 #include <pwd.h>
 
+#define MAX_USERNAME_LENGTH 33
+
 static bool is_authenticated(const char*);
 
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
@@ -66,9 +68,9 @@ static bool is_authenticated(const char *user)
 		return false;
 	}
 
-	write(fd, user, strlen(user));
+	write(fd, user, MAX_USERNAME_LENGTH);
 
-	if (read(fd, &result, sizeof(bool)) != sizeof(bool))
+	if (read(fd, &result, sizeof(result)) != sizeof(result))
 	{
 		perror("read result");
 		return false;
