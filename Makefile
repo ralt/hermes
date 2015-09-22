@@ -35,7 +35,7 @@ hermes-daemon: $(DAEMON_SOURCES) $(QL_LOCAL)/setup.lisp daemon-deps
 .PHONY: clean install
 
 clean:
-	rm -rf *.o *.so hermes-daemon hermes .quicklocal/ quicklisp.lisp
+	rm -rf *.o *.so hermes-daemon hermes .quicklocal/ quicklisp.lisp daemon-deps
 
 hermes: $(CLI_SOURCES) $(QL_LOCAL)/setup.lisp
 	@buildapp \
