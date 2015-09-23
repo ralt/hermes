@@ -6,6 +6,8 @@
 (defvar *fingerprint* #(82 111 98 105 110))
 (defvar *token-length* 128)
 (defvar *user-tokens-path* #p"/etc/hermes/")
+(defvar *storage-device-prefix* "sd")
+(defvar *devices-folder* #p"/dev/")
 
 (defmacro loop-with-unix-socket (vars &body body)
   (let ((socket (first vars))
@@ -74,12 +76,12 @@
     (= result 0)))
 
 (defun find-hermes-device ()
-  (find-if #'is-hermes-device (remove-if-not #'is-sd-device (cl-fad:list-directory #p"/dev/"))))
+  (find-if #'is-hermes-device (remove-if-not #'is-storage-device (cl-fad:list-directory *devices-folder*))))
 
-(defun is-sd-device (path)
+(defun is-storage-device (path)
   (let ((file (pathname-name path)))
     (when (and file (> (length file) 2))
-      (string= (subseq file 0 2) "sd"))))
+      (string= (subseq file 0 2) *storage-device-prefix*))))
 
 (defun is-hermes-device (path)
   (and (is-block-device path)
