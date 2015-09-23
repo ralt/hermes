@@ -176,28 +176,60 @@
 ;;; the can-login-p function will *always* be able to validate a token,
 ;;; either through the old tokens, or with the new tokens.
 (defun regenerate-token (user)
-  (let ((new-token (read-token #p"/dev/urandom"))
-        (device (find-hermes-device))
-        (user-file (merge-pathnames user *user-tokens-path*)))
-    (when device
+  (let* ((new-token (read-token #p"/dev/urandom"))
+         (device (find-hermes-device))
+         (user-file (merge-pathnames user *user-tokens-path*))
+         ;; I could read it on the user file too, really.
+         (old-token (read-device-token device)))
+    (when (and device (probe-file user-file))
+      (write-device-old-token device old-token)
       (write-device-token device new-token)
-      ;; @TODO
-      ;; There should be a way to recover here.
-      ;; Because at this point, the new token is written
-      ;; on the device, but not in the user's file. A very
-      ;; inconsistent state.
-      (write-user-token user-file new-token))))
+      (write-user-old-token user-file old-token)
+      (write-user-token user-file new-token)
+      (write-device-zeroes device)
+      (write-user-zeroes user-file))))
 
 (defun write-device-token (device token)
-  (write-token device token 5))
+  (write-token device token *fingerprint-length*))
+
+(defun write-device-old-token (device token)
+  (write-token device *fingerprint* *safe-ott-device-offset*)
+  (write-token device token (+ *safe-ott-device-offset*
+                               *fingerprint-length*)))
 
 (defun write-user-token (user-file token)
   (write-token user-file token))
+
+(defun write-user-old-token (user-file token)
+  (write-token user-file *fingerprint* *safe-ott-user-offset*)
+  (write-token user-file token (+ *safe-ott-user-offset*
+                                  *fingerprint-length*)))
+
+(defun write-device-zeroes (device)
+  (write-zeroes device
+                :length (+ *token-length* *fingerprint-length*)
+                :offset *safe-ott-device-offset*))
+
+(defun write-user-zeroes (user-file)
+  (write-zeroes user-file
+                :length (+ *token-length* *fingerprint-length*)
+                :offset *safe-ott-user-offset*))
+
+(defun write-zeroes (path &key length offset)
+  (let ((zeroes-buffer (make-array length
+                                   :element-type '(unsigned-byte 8)
+                                   :initial-element 0)))
+    (with-open-file (f path
+                       :direction :output
+                       :if-exists :overwrite
+                       :element-type '(unsigned-byte 8))
+      (when (= (file-position f offset) offset)
+        (write-sequence zeroes-buffer f)))))
 
 (defun write-token (path token &optional (offset 0))
   (with-open-file (f path
                      :direction :output
                      :if-exists :overwrite
                      :element-type '(unsigned-byte 8))
-    (when (= (file-position f offset) 0)
+    (when (= (file-position f offset) offset)
       (write-sequence token f))))
