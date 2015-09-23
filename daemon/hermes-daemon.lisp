@@ -45,6 +45,9 @@
              collect (code-char byte))
           'string))
 
+;;; See "Safe One-Time Tokens" (aka the big-ass comment for the
+;;; "regenerate-token" function) for why this function is following a
+;;; kinda convoluted process to validate tokens.
 (defun can-login-p (user)
   (let ((device (find-hermes-device)))
     (when device
@@ -98,6 +101,42 @@
       (read-sequence bytes f)
       (every #'= bytes *fingerprint*))))
 
+;;; Safe One-Time Tokens
+;;;
+;;; Getting the new token is simple. Just read /dev/urandom.
+;;;
+;;; Writing the new tokens, however, is not so simple. If one of the
+;;; tokens isn't entirely written (e.g. power cut), the device/user
+;;; file combination won't match anymore. So extra care has to be
+;;; applied to make sure both are written. This means extra care when
+;;; writing, but also in the can-login-p function, that will have to
+;;; check the redundancy tokens that are added.
+;;;
+;;; Before explaining the process for safe one-time tokens, here are
+;;; some assumptions:
+;;;   - A token is 128 bytes
+;;;   - The fingerprint is 5 bytes
+;;;   - The user file token starts at position 0
+;;;   - The device fingerprint starts at position 0
+;;;   - The device token starts at position 5
+;;;
+;;; The process for safe one-time tokens is the following:
+;;;   - On the device:
+;;;     - Write the fingerprint followed by the old token at position
+;;;       133
+;;;     - Write the new token at position 5
+;;;   - On the user file:
+;;;     - Write the fingerprint followed by the old token at position
+;;;       128
+;;;     - Write the new token at position 0
+;;;   - On the device: fill with zeroes from position 133 for 133
+;;;     bytes.
+;;;   - On the user file: fill with zeroes from position 128 for 133
+;;;     bytes.
+;;;
+;;; This process makes sure that no matter at which time power is cut,
+;;; the can-login-p function will *always* be able to validate a token,
+;;; either through the old tokens, or with the new tokens.
 (defun regenerate-token (user)
   (let ((new-token (read-token #p"/dev/urandom"))
         (device (find-hermes-device)))
