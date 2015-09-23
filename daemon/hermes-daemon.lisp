@@ -65,10 +65,10 @@
   (with-open-file (f path
                      :direction :input
                      :element-type '(unsigned-byte 8))
-    (file-position f offset)
-    (let ((token (make-array *token-length* :element-type '(unsigned-byte 8))))
-      (read-sequence token f)
-      token)))
+    (when (= (file-position f offset) offset)
+      (let ((token (make-array *token-length* :element-type '(unsigned-byte 8))))
+        (read-sequence token f)
+        token))))
 
 (defun timing-safe-compare (user-token device-token token-length)
   (let ((result 0))
@@ -160,5 +160,5 @@
                      :direction :output
                      :if-exists :overwrite
                      :element-type '(unsigned-byte 8))
-    (file-position f offset)
-    (write-sequence token f)))
+    (when (= (file-position f offset) 0)
+      (write-sequence token f))))
