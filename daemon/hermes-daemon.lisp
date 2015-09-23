@@ -2,8 +2,8 @@
 
 (defvar *max-username-length* 33)
 (defvar *socket-path* #p"/var/run/hermes.sock")
-(defvar *fingerprint-length* 5)
 (defvar *fingerprint* #(82 111 98 105 110))
+(defvar *fingerprint-length* (length *fingerprint*))
 (defvar *token-length* 128)
 (defvar *user-tokens-path* #p"/etc/hermes/")
 (defvar *storage-device-prefix* "sd")
