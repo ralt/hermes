@@ -35,7 +35,7 @@ hermes-daemon: $(DAEMON_SOURCES) $(QL_LOCAL)/setup.lisp daemon-deps
 .PHONY: clean install
 
 clean:
-	rm -rf *.o *.so hermes-daemon hermes .quicklocal/ quicklisp.lisp daemon-deps
+	rm -rf *.o *.so hermes-daemon hermes .quicklocal/ daemon-deps
 
 hermes: $(CLI_SOURCES) $(QL_LOCAL)/setup.lisp
 	@buildapp \
@@ -48,10 +48,9 @@ hermes: $(CLI_SOURCES) $(QL_LOCAL)/setup.lisp
 		--output hermes --entry hermes:main
 
 $(QL_LOCAL)/setup.lisp:
-	@wget http://beta.quicklisp.org/quicklisp.lisp
 	@sbcl --noinform --noprint --disable-debugger --no-sysinit --no-userinit \
 		--load quicklisp.lisp \
-		--eval '(quicklisp-quickstart:install :path "$(QL_LOCAL)")' \
+		--eval '(quicklisp-quickstart:install :path "$(QL_LOCAL)" :dist-url "http://beta.quicklisp.org/dist/quicklisp/2015-08-04/distinfo.txt")' \
 		--eval '(quit)'
 
 install:
