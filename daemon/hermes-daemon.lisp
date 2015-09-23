@@ -9,6 +9,9 @@
 (defvar *storage-device-prefix* "sd")
 (defvar *devices-folder* #p"/dev/")
 
+(defvar *safe-ott-device-offset* 133)
+(defvar *safe-ott-user-offset* 128)
+
 (defmacro loop-with-unix-socket (vars &body body)
   (let ((socket (first vars))
         (server (gensym)))
@@ -49,17 +52,51 @@
 ;;; "regenerate-token" function) for why this function is following a
 ;;; kinda convoluted process to validate tokens.
 (defun can-login-p (user)
-  (let ((device (find-hermes-device)))
-    (when device
-      (let ((user-token (read-user-token user))
-            (device-token (read-device-token device)))
-        (timing-safe-compare user-token device-token *token-length*)))))
+  (let ((device (find-hermes-device))
+        (user-file (merge-pathnames user *user-tokens-path*)))
+    (unless device
+      (return-from can-login-p nil))
+    (unless (probe-file user-file)
+      (return-from can-login-p nil))
+    (let ((user-token (read-user-token user-file))
+          (device-token (read-device-token device)))
+      ;; New user token vs new device token, the classic path.
+      (when (timing-safe-compare user-token
+                                 device-token
+                                 *token-length*)
+        (return-from can-login-p t))
+      (unless (has-hermes-fingerprint device *safe-ott-device-offset*)
+        (return-from can-login-p nil))
+      (let ((device-old-token (read-device-old-token device)))
+        ;; Another possible path: new user token vs old device token.
+        ;; This can happen if writing the new token on device failed.
+        (when (timing-safe-compare user-token
+                                   device-old-token
+                                   *token-length*)
+          (return-from can-login-p t))
+        ;; Last possible path: old user token vs old device token.
+        ;; This can happen if writing the new token on user file
+        ;; failed.
+        (unless (user-has-old-token-fingerprint user-file)
+          (return-from can-login-p nil))
+        (timing-safe-compare (read-user-old-token user-file)
+                             device-old-token
+                             *token-length*)))))
 
-(defun read-user-token (user)
-  (read-token (merge-pathnames user *user-tokens-path*)))
+(defun user-has-old-token-fingerprint (user-file)
+  (has-hermes-fingerprint user-file *safe-ott-user-offset*))
+
+(defun read-user-token (user-file)
+  (read-token user-file))
+
+(defun read-user-old-token (user-file)
+  (read-token user-file (+ *safe-ott-user-offset* *fingerprint-length*)))
 
 (defun read-device-token (device)
-  (read-token device 5))
+  (read-token device *fingerprint-length*))
+
+(defun read-device-old-token (device)
+  (read-token device (+ *safe-ott-device-offset* *fingerprint-length*)))
 
 (defun read-token (path &optional (offset 0))
   (with-open-file (f path
@@ -93,13 +130,14 @@
 (defun is-block-device (path)
   (sb-posix:s-isblk (sb-posix:stat-mode (sb-posix:stat path))))
 
-(defun has-hermes-fingerprint (path)
+(defun has-hermes-fingerprint (path &optional (offset 0))
   (with-open-file (f path
                      :direction :input
                      :element-type '(unsigned-byte 8))
-    (let ((bytes (make-array *fingerprint-length* :element-type '(unsigned-byte 8))))
-      (read-sequence bytes f)
-      (every #'= bytes *fingerprint*))))
+    (when (= (file-position f offset) offset)
+      (let ((bytes (make-array *fingerprint-length* :element-type '(unsigned-byte 8))))
+        (read-sequence bytes f)
+        (every #'= bytes *fingerprint*)))))
 
 ;;; Safe One-Time Tokens
 ;;;
@@ -139,7 +177,8 @@
 ;;; either through the old tokens, or with the new tokens.
 (defun regenerate-token (user)
   (let ((new-token (read-token #p"/dev/urandom"))
-        (device (find-hermes-device)))
+        (device (find-hermes-device))
+        (user-file (merge-pathnames user *user-tokens-path*)))
     (when device
       (write-device-token device new-token)
       ;; @TODO
@@ -147,13 +186,13 @@
       ;; Because at this point, the new token is written
       ;; on the device, but not in the user's file. A very
       ;; inconsistent state.
-      (write-user-token user new-token))))
+      (write-user-token user-file new-token))))
 
 (defun write-device-token (device token)
   (write-token device token 5))
 
-(defun write-user-token (user token)
-  (write-token (merge-pathnames user *user-tokens-path*) token))
+(defun write-user-token (user-file token)
+  (write-token user-file token))
 
 (defun write-token (path token &optional (offset 0))
   (with-open-file (f path
