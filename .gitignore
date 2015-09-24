@@ -3,9 +3,7 @@ scripts/test.bin
 *.so
 core
 hermes
-quicklisp-manifest.txt
 .quicklocal
 bin/
-quicklisp.lisp
 daemon-deps
 hermes-daemon

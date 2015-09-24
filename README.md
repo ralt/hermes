@@ -26,7 +26,7 @@ $ sudo usermod -a -G hermes <user>
 ### Preparing the usb stick
 
 I recommend having 2 partitions on your usb stick: a very small one
-(hermes needs 133 bytes as of now, so allocate 2048 bytes to be safe),
+(hermes needs 266 bytes as of now, so allocate 2048 bytes to be safe),
 and another partition for your data.
 
 Let's assume that the partition for hermes is `/dev/sdb1`, and your
