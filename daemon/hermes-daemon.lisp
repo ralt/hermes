@@ -27,6 +27,17 @@
                     ,@body
                     (close ,socket)))))))
 
+(defmacro with-sync-write-file (vars &body body)
+  (let ((stream (first vars))
+        (path (second vars)))
+    `(with-open-file (,stream ,path
+                              :direction :output
+                              :if-exists :overwrite
+                              :element-type '(unsigned-byte 8))
+       ,@body
+       (finish-output ,stream)
+       (sb-posix:fsync (sb-sys:fd-stream-fd ,stream)))))
+
 (defun main (&rest args)
   (declare (ignore args))
   (loop-with-unix-socket (socket)
@@ -219,18 +230,11 @@
   (let ((zeroes-buffer (make-array length
                                    :element-type '(unsigned-byte 8)
                                    :initial-element 0)))
-    (with-open-file (f path
-                       :direction :output
-                       :if-exists :overwrite
-                       :element-type '(unsigned-byte 8))
+    (with-sync-write-file (f path)
       (when (file-position f offset)
         (write-sequence zeroes-buffer f)))))
 
 (defun write-token (path token &optional (offset 0))
-  (with-open-file (f path
-                     :direction :output
-                     :if-exists :overwrite
-                     :element-type '(unsigned-byte 8))
+  (with-sync-write-file (f path)
     (when (file-position f offset)
-      (write-sequence token f)
-      (finish-output f))))
+      (write-sequence token f))))
