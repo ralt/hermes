@@ -17,12 +17,6 @@ $ sudo dpkg -i hermes_1.3_amd64.deb
 $ sudo apt-get -f install
 ```
 
-Add yourself to the `hermes` group:
-
-```
-$ sudo usermod -a -G hermes <user>
-```
-
 ### Preparing the usb stick
 
 I recommend having 2 partitions on your usb stick: a very small one
@@ -69,9 +63,6 @@ $ sudo make install
 # Configure your system
 $ sudo pam-auth-update # Select "Hermes"
 $ sudo addgroup hermes
-
-# Configure your user
-$ sudo usermod -a -G hermes <user>
 ```
 
 If you're using systemd, you can then run the following:
