@@ -1,3 +1,11 @@
+hermes (1.3) stable; urgency=medium
+
+  * Adds safe one-time tokens.
+  * Adds syslog facilities
+  * Adds user to group on hermes write
+
+ -- Florian Margaine <florian@margaine.com>  Thu, 24 Sep 2015 16:17:55 +0200
+
 hermes (1.2) unstable; urgency=medium
 
   * Adds one-time tokens.
