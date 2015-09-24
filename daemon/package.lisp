@@ -1,3 +1,4 @@
 (defpackage #:hermes-daemon
   (:use :cl)
-  (:export :main))
+  (:export :main)
+  (:shadow :log))

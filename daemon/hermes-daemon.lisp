@@ -8,6 +8,11 @@
 (defvar *user-tokens-path* #p"/etc/hermes/")
 (defvar *storage-device-prefix* "sd")
 (defvar *devices-folder* #p"/dev/")
+(defvar *safe-ott-device-offset* 133)
+(defvar *safe-ott-user-offset* 128)
+
+(defun log (priority text)
+  (syslog:log "hermes" :authpriv priority text))
 
 (defvar *safe-ott-device-offset* 133)
 (defvar *safe-ott-user-offset* 128)
@@ -40,6 +45,7 @@
     (let ((user-buffer (make-array *max-username-length*
                                    :element-type '(unsigned-byte 8))))
       (when (> (read-sequence user-buffer socket) 0)
+        (log :info "login requested")
         (let ((user (buffer-to-string user-buffer)))
           (write-byte (handler-case
                           (if (and (can-login-p user)
@@ -62,8 +68,10 @@
   (let ((device (find-hermes-device))
         (user-file (merge-pathnames user *user-tokens-path*)))
     (unless device
+      (log :err "no device found")
       (return-from can-login-p nil))
     (unless (probe-file user-file)
+      (log :err "no user file found")
       (return-from can-login-p nil))
     (let ((user-token (read-user-token user-file))
           (device-token (read-device-token device)))
@@ -71,8 +79,10 @@
       (when (timing-safe-compare user-token
                                  device-token
                                  *token-length*)
+        (log :info "normal login successful")
         (return-from can-login-p t))
       (unless (has-hermes-fingerprint device *safe-ott-device-offset*)
+        (log :err "tokens don't match, aborting")
         (return-from can-login-p nil))
       (let ((device-old-token (read-device-old-token device)))
         ;; Another possible path: new user token vs old device token.
@@ -80,15 +90,22 @@
         (when (timing-safe-compare user-token
                                    device-old-token
                                    *token-length*)
+          (log :info "recovered login with the old token on the device")
           (return-from can-login-p t))
         ;; Last possible path: old user token vs old device token.
         ;; This can happen if writing the new token on user file
         ;; failed.
         (unless (user-has-old-token-fingerprint user-file)
+          (log :err "device has old token but not user file, aborting")
           (return-from can-login-p nil))
-        (timing-safe-compare (read-user-old-token user-file)
-                             device-old-token
-                             *token-length*)))))
+        (if (timing-safe-compare (read-user-old-token user-file)
+                                 device-old-token
+                                 *token-length*)
+            (progn
+              (log :info "recovered login with the old tokens")
+              t)
+            (progn
+              (log :err "device and user file have old tokens that don't match, aborting")))))))
 
 (defun user-has-old-token-fingerprint (user-file)
   (has-hermes-fingerprint user-file *safe-ott-user-offset*))
@@ -188,13 +205,19 @@
          (user-file (merge-pathnames user *user-tokens-path*))
          ;; I could read it on the user file too, really.
          (old-token (read-device-token device)))
-    (when (and device (probe-file user-file))
-      (write-device-old-token device old-token)
-      (write-device-token device new-token)
-      (write-user-old-token user-file old-token)
-      (write-user-token user-file new-token)
-      (write-device-zeroes device)
-      (write-user-zeroes user-file))))
+    (unless device
+      (log :err "no device found to write new token")
+      (return-from regenerate-token nil))
+    (unless (probe-file user-file)
+      (log :err "no user file to write new token")
+      (return-from regenerate-token nil))
+    (write-device-old-token device old-token)
+    (write-device-token device new-token)
+    (write-user-old-token user-file old-token)
+    (write-user-token user-file new-token)
+    (write-device-zeroes device)
+    (write-user-zeroes user-file))
+  t)
 
 (defun write-device-token (device token)
   (write-token device token *fingerprint-length*))
