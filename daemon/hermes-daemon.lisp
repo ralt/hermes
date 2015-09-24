@@ -102,7 +102,7 @@
   (with-open-file (f path
                      :direction :input
                      :element-type '(unsigned-byte 8))
-    (when (= (file-position f offset) offset)
+    (when (file-position f offset)
       (let ((token (make-array *token-length* :element-type '(unsigned-byte 8))))
         (read-sequence token f)
         token))))
@@ -134,7 +134,7 @@
   (with-open-file (f path
                      :direction :input
                      :element-type '(unsigned-byte 8))
-    (when (= (file-position f offset) offset)
+    (when (file-position f offset)
       (let ((bytes (make-array *fingerprint-length* :element-type '(unsigned-byte 8))))
         (read-sequence bytes f)
         (every #'= bytes *fingerprint*)))))
@@ -223,7 +223,7 @@
                        :direction :output
                        :if-exists :overwrite
                        :element-type '(unsigned-byte 8))
-      (when (= (file-position f offset) offset)
+      (when (file-position f offset)
         (write-sequence zeroes-buffer f)))))
 
 (defun write-token (path token &optional (offset 0))
@@ -231,5 +231,5 @@
                      :direction :output
                      :if-exists :overwrite
                      :element-type '(unsigned-byte 8))
-    (when (= (file-position f offset) offset)
+    (when (file-position f offset)
       (write-sequence token f))))
