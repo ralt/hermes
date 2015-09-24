@@ -232,4 +232,5 @@
                      :if-exists :overwrite
                      :element-type '(unsigned-byte 8))
     (when (file-position f offset)
-      (write-sequence token f))))
+      (write-sequence token f)
+      (finish-output f))))
