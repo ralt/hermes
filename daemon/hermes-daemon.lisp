@@ -8,6 +8,11 @@
 (defvar *user-tokens-path* #p"/etc/hermes/")
 (defvar *storage-device-prefix* "sd")
 (defvar *devices-folder* #p"/dev/")
+(defvar *safe-ott-device-offset* 133)
+(defvar *safe-ott-user-offset* 128)
+
+(defun log (priority text)
+  (syslog:log "hermes" :authpriv priority text))
 
 (defvar *safe-ott-device-offset* 133)
 (defvar *safe-ott-user-offset* 128)

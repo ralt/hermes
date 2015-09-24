@@ -3,6 +3,6 @@
   :author "Florian Margaine <florian@margaine.com>"
   :license "MIT License"
   :serial t
-  :depends-on (:iolib :sb-posix :cl-fad)
+  :depends-on (:iolib :sb-posix :cl-fad :cl-syslog)
   :components ((:file "package")
                (:file "hermes-daemon")))
