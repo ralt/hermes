@@ -3,6 +3,7 @@
   :author "Florian Margaine <florian@margaine.com>"
   :license "MIT License"
   :serial t
+  :depends-on (:sb-posix)
   :components ((:file "package")
                (:file "error")
                (:file "command")
