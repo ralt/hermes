@@ -52,7 +52,9 @@
                                    (regenerate-token user))
                               1
                               0)
-                        (error () 0))
+                        (error (err)
+                          (progn (log :crit (format nil "fatal error: ~A" err))
+                                 0)))
                       socket))))))
 
 (defun buffer-to-string (buffer)
