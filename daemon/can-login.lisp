@@ -89,10 +89,14 @@
              (remove-if-not #'is-storage-device
                             (cl-fad:list-directory *devices-folder*)))))
 
+(defun starts-with (string other-string)
+  (string= (subseq string 0 (length other-string)) other-string))
+
 (defun is-storage-device (path)
   (let ((file (pathname-name path)))
-    (when (and file (> (length file) 2))
-      (string= (subseq file 0 2) *storage-device-prefix*))))
+    (and file
+         (> (length file) 2)
+         (starts-with file *storage-device-prefix*))))
 
 (defun is-hermes-device (path)
   (and (is-block-device path)
