@@ -9,4 +9,7 @@
                (:file "macros")
                (:file "can-login")
                (:file "regenerate-token")
-               (:file "hermes-daemon")))
+               (:file "hermes-daemon"))
+  :build-operation asdf:program-op
+  :build-pathname "hermes-daemon"
+  :entry-point "hermes-daemon:main")

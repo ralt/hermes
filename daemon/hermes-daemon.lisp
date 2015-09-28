@@ -1,7 +1,6 @@
 (in-package #:hermes-daemon)
 
-(defun main (&rest args)
-  (declare (ignore args))
+(defun main ()
   (make-overrideable-variables
    (*socket-path* . "SOCKET_PATH")
    (*user-tokens-path* . "USER_TOKENS_PATH")

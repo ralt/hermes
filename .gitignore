@@ -2,8 +2,8 @@ scripts/test.bin
 *.o
 *.so
 core
-hermes
+cli/hermes
 .quicklocal
 bin/
 daemon-deps
-hermes-daemon
+daemon/hermes-daemon

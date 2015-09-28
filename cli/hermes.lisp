@@ -1,9 +1,9 @@
 (in-package #:hermes)
 
-(defun main (args)
+(defun main ()
   (handler-case
-      (if (command-exists *root-commands* (rest args))
-          (handle-command *root-commands* (rest args))
+      (if (command-exists *root-commands* (rest sb-ext:*posix-argv*))
+          (handle-command *root-commands* (rest sb-ext:*posix-argv*))
           (handle-command *root-commands* '("help")))
     (argument-error (err)
       (progn

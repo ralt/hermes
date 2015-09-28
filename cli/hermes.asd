@@ -9,4 +9,7 @@
                (:file "command")
                (:file "help")
                (:file "write")
-               (:file "hermes")))
+               (:file "hermes"))
+  :build-operation asdf:program-op
+  :build-pathname "hermes"
+  :entry-point "hermes:main")
