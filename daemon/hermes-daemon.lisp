@@ -39,6 +39,18 @@
        (finish-output ,stream)
        (sb-posix:fsync (sb-sys:fd-stream-fd ,stream)))))
 
+(defmacro with-retries (vars &body body)
+  (let ((times (getf vars :times))
+        (every (getf vars :every))
+        (result (gensym))
+        (i (gensym)))
+    `(loop for ,i from 0 upto (1- ,times)
+        do (let ((,result (progn ,@body)))
+             (when ,result (return ,result)))
+          ;; Don't sleep the last time, it's pointless
+        do (unless (= ,i (1- ,times))
+             (sleep ,every)))))
+
 (defun main (&rest args)
   (declare (ignore args))
   (loop-with-unix-socket (socket)
@@ -142,7 +154,12 @@
     (= result 0)))
 
 (defun find-hermes-device ()
-  (find-if #'is-hermes-device (remove-if-not #'is-storage-device (cl-fad:list-directory *devices-folder*))))
+  ;; Retry multiple times over 5 seconds, a device can take some time to be
+  ;; available in the OS.
+  (with-retries (:times 6 :every 1)
+    (find-if #'is-hermes-device
+             (remove-if-not #'is-storage-device
+                            (cl-fad:list-directory *devices-folder*)))))
 
 (defun is-storage-device (path)
   (let ((file (pathname-name path)))
