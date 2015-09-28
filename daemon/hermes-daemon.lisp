@@ -24,9 +24,11 @@
        (when (probe-file *socket-path*)
          (sb-posix:unlink *socket-path*))
        (sockets:with-open-socket (,server :address-family :local
-                                         :local-filename (namestring *socket-path*)
-                                         :connect :passive)
-         (sb-posix:chown *socket-path* 0 (sb-posix:group-gid (sb-posix:getgrnam "hermes")))
+                                          :local-filename (namestring *socket-path*)
+                                          :connect :passive)
+         (sb-posix:chown *socket-path*
+                         0
+                         (sb-posix:group-gid (sb-posix:getgrnam "hermes")))
          (sb-posix:chmod *socket-path* #o660)
          (loop do (let ((,socket (sockets:accept-connection ,server)))
                     ,@body
@@ -119,7 +121,10 @@
               (log :info "recovered login with the old tokens")
               t)
             (progn
-              (log :err "device and user file have old tokens that don't match, aborting")))))))
+              (log
+               :err
+               "device and user file have old tokens that don't match, aborting")
+              nil))))))
 
 (defun user-has-old-token-fingerprint (user-file)
   (has-hermes-fingerprint user-file *safe-ott-user-offset*))
