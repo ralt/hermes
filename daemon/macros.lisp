@@ -34,3 +34,10 @@
           ;; Don't sleep the last time, it's pointless
         do (unless (= ,i ,tries-max)
              (sleep ,delay-in-seconds)))))
+
+(defmacro make-overrideable-variables (&body alists)
+  `(progn
+     ,@(loop for pair in alists
+          collect (let ((var-name (cdr pair)))
+                    `(when (uiop:getenvp ,var-name)
+                       (setf ,(car pair) (uiop:getenv ,var-name)))))))

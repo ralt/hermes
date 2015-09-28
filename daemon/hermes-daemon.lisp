@@ -2,6 +2,11 @@
 
 (defun main (&rest args)
   (declare (ignore args))
+  (make-overrideable-variables
+   (*socket-path* . "SOCKET_PATH")
+   (*user-tokens-path* . "USER_TOKENS_PATH")
+   (*storage-device-prefix* . "STORAGE_DEVICE_PREFIX")
+   (*devices-folder* . "DEVICES_FOLDER"))
   (loop-with-unix-socket (socket)
     (let ((user-buffer (make-array *max-username-length*
                                    :element-type '(unsigned-byte 8))))
