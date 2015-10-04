@@ -13,7 +13,7 @@ Demo: https://www.youtube.com/watch?v=W7L9FrIDYgU
 Download the [debian package][0] and install it:
 
 ```
-$ sudo dpkg -i hermes_1.4_amd64.deb
+$ sudo dpkg -i hermes_1.5_amd64.deb
 $ sudo apt-get -f install
 ```
 
@@ -112,5 +112,5 @@ has to get the boolean result back and it can return it.
 The project is provided under the MIT license.
 
 
-  [0]: https://github.com/ralt/hermes/releases/download/1.4/hermes_1.4_amd64.deb
+  [0]: https://github.com/ralt/hermes/releases/download/1.5/hermes_1.5_amd64.deb
   [1]: https://github.com/ralt/hermes#preparing-the-usb-stick
