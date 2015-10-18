@@ -1,3 +1,9 @@
+hermes (1.6) stable; urgency=medium
+
+  * Retries more often with less delay
+
+ -- Florian Margaine <florian@margaine.com>  Sun, 18 Oct 2015 19:06:45 +0200
+
 hermes (1.5) stable; urgency=medium
 
   * Adds overrideable variables
