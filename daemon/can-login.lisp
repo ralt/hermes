@@ -84,7 +84,9 @@
 (defun find-hermes-device ()
   ;; Retry multiple times over 5 seconds, a device can take some time to be
   ;; available in the OS.
-  (with-retries (6 1)
+  ;; To retry every 100ms over 5 seconds, you need to retry 60 times every
+  ;; 100ms.
+  (with-retries (60 1/100)
     (find-if #'is-hermes-device
              (remove-if-not #'is-storage-device
                             (cl-fad:list-directory *devices-folder*)))))
