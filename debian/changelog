@@ -1,3 +1,9 @@
+hermes (1.8) stable; urgency=medium
+
+  * Really fix make install
+
+ -- Florian Margaine <florian@margaine.com>  Sun, 27 Dec 2015 23:08:36 +0200
+
 hermes (1.7) stable; urgency=medium
 
   * Fix make install
