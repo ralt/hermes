@@ -1,3 +1,9 @@
+hermes (1.7) stable; urgency=medium
+
+  * Fix make install
+
+ -- Florian Margaine <florian@margaine.com>  Sun, 27 Dec 2015 23:03:35 +0200
+
 hermes (1.6) stable; urgency=medium
 
   * Retries more often with less delay
