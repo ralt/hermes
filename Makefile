@@ -57,6 +57,9 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/hermes
 	mkdir -p $(DESTDIR)/etc/hermes
 	mkdir -p $(DESTDIR)/etc/systemd/system
+	mkdir -p $(DESTDIR)/lib/security
+	mkdir -p $(DESTDIR)/usr/share/pam-configs
+	mkdir -p $(DESTDIR)/usr/bin
 	chmod 500 $(DESTDIR)/etc/hermes
 	install -c -m 644 debian/services/hermes.service $(DESTDIR)/etc/systemd/system
 	install -c -m 755 hermes $(DESTDIR)/usr/bin
