@@ -44,4 +44,5 @@
             (declare (ignore _ __))
             (unless (= code 0)
               (error (format nil "Couldn't add ~A to the hermes group" user))))
-          (format t "Added ~A to the hermes group.~%" user))))))
+          (format t "Added ~A to the hermes group.~%" user)
+          (format t "If you are logged in as ~A, you need to log out for the group change to take effect.~%" user))))))
