@@ -5,7 +5,7 @@
      do (write-byte byte stream)))
 
 (defcommand *root-commands* write (args)
-  "transforms a device in an hermes device"
+  "transforms a device into a hermes device"
   (unless args
     (error 'argument-error :text "Missing argument: device"))
   (when (< (length args) 2)

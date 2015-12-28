@@ -24,7 +24,7 @@ hermes online help: <https://github.com/ralt/hermes/issues>
   (declare (ignore args))
   (format t "usage: hermes write <device> <user>
 
-Transform a device in an hermes device for a user.
+Transform a device into a hermes device for a user.
 
 /!\\ WARNING /!\\
 
